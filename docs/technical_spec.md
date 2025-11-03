@@ -31,7 +31,7 @@ Build a web-based slide editor that supports real-time, multi-user editing of sl
 - **Frontend**: React 18 + TypeScript, Vite, Zustand (local state), Tailwind CSS.
 - **Real-time**: Yjs CRDT with [@liveblocks/yjs-room](https://liveblocks.io) provider. (Fallback: y-webrtc for local dev.)
 - **Storage**: Supabase Postgres for persistent deck & slide data; Object storage for future media.
-- **Auth**: Supabase Auth (email magic-link) + JWT tokens in share links.
+- **Auth**: Supabase Auth (username & password) + JWT tokens in share links.
 - **Deployment**: Vercel (frontend) & Supabase (backend).
 - **Testing**: Vitest + React Testing Library; Playwright for E2E.
 
@@ -121,13 +121,16 @@ Real-time presence (cursor, selection, assigned color) is transmitted via Livebl
 
 ---
 
-### 10.1 Authentication (Google OAuth)
-1. **Login Button** – User clicks “Continue with Google” on `/login`.
-2. **Redirect** – `supabase.auth.signInWithOAuth({ provider: 'google' })` sends user to Google consent screen.
-3. **Callback** – After consent, browser returns to `/auth/callback` with `access_token` & `refresh_token` fragments.
-4. **Session Established** – Supabase JS stores tokens; `onAuthStateChange` hydrates React context with `user` (contains `id`, `email`, `name`, `avatar_url`).
-5. **User Provisioning** – On first login, a `users` row is upserted with `auth_uid`, `name`, `email`, and `avatar_url`.
-6. **Silent Refresh** – Tokens auto-refresh; expiry redirects to `/login`.
+### 10.1 Authentication (Username + Password)
+1. **Signup** – User provides `username`, `email`, and `password` on `/signup`.
+   - Frontend calls `supabase.auth.signUp({ email, password, options: { data: { username } } })`.
+   - Supabase returns a session immediately; email confirmation is disabled for faster onboarding.
+2. **Login** – On `/login`, user enters `username` (or email) & `password`.
+   - Frontend resolves username → email via an RPC or uses email directly.
+   - Calls `supabase.auth.signInWithPassword({ email, password })`.
+3. **Session Storage** – Supabase JS stores `access_token` & `refresh_token` in `localStorage`; React context hydrated via `onAuthStateChange`.
+4. **Password Reset** – User can request reset; Supabase emails a magic link to choose a new password.
+5. **Security** – Passwords are hashed with `bcrypt` by Supabase; enforce min length & rate-limit login attempts.
 
 ## 7. Collaboration & CRDT Strategy
 - **Granularity**: One Yjs doc per deck. Slides & elements live in nested Yjs maps/arrays.
@@ -153,16 +156,6 @@ const undoManager = new Y.UndoManager(yDeck, {
 
 WebSocket handled by Liveblocks rooms (`wss://liveblocks.app/v5?room=<deckId>`).
 
-## 10. Key User Flows
-
-### 10.1 Authentication (Email Magic-Link)
-1. **Enter Email** – User enters email on `/login`.
-2. **Request OTP/Magic-Link** – Frontend calls Supabase `auth.signInWithOtp({ email })`.
-3. **Email Delivered** – Supabase sends a time-bound (≤ 10 min) magic-link containing a JWT.
-4. **User Clicks Link** – Browser hits `/auth/callback#access_token=<jwt>` which Supabase JS client intercepts and stores in `localStorage`.
-5. **Session Restored** – `supabase.auth.onAuthStateChange` boots the React app with `user.id` in context; JWT attached to future REST / WS calls.
-6. **Auto-Login** – On subsequent visits, session is restored from refresh token. Expired tokens trigger silent refresh or redirect to `/login`.
-
 ### 10.2 Deck Sharing via Links
 1. **Generate Link** – In the editor, owner clicks “Share.” UI chooses scope: _single slide_ or _entire deck_, and role: _viewer_ / _editor_.
 2. **Backend Endpoint** – Frontend `POST /decks/:id/share` with `{ scope, role }`.
@@ -171,7 +164,7 @@ WebSocket handled by Liveblocks rooms (`wss://liveblocks.app/v5?room=<deckId>`).
 5. **Sending** – User copies or emails the link.
 6. **Access Flow**
 - ⚠️ **Auth Gate** – When a visitor opens the link, the app checks `supabase.auth.getSession()`.
-  - If **no session**, the visitor is redirected to `/login?redirect=<encodedLink>`; after successful magic-link login the app resumes the flow below.
+  - If **no session**, the visitor is redirected to `/login?redirect=<encodedLink>`; after signing in with **username + password** the app resumes the flow below.
 - With a valid session, the frontend reads `token` query param and calls `POST /auth/exchange` **(requires auth header)** → returns a short-lived JWT with `role`, `deck_id`, optional `slide_id` claims.
 - JWT stored for session; RLS policies gate DB rows accordingly.
 - Editor loads deck via Liveblocks room `deckId`; presence message includes role.
