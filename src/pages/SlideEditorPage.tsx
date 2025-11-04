@@ -1,4 +1,5 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, memo, useCallback } from 'react'
+import type { CSSProperties, FormEventHandler } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
 import { fetchDeckById, updateDeckTitle, updateSlideYDoc, createSlide, updateDeckVisibility } from '../lib/api/decks'
@@ -29,6 +30,9 @@ export function SlideEditorPage() {
     content: string
     xPercent: number
     yPercent: number
+    fontSize?: number
+    isBold?: boolean
+    isItalic?: boolean
   }
 
   type CanvasSlide = {
@@ -39,6 +43,8 @@ export function SlideEditorPage() {
   const [canvasSlides, setCanvasSlides] = useState<CanvasSlide[]>([])
   const [activeSlideId, setActiveSlideId] = useState<string | null>(null)
   const [isInsertMenuOpen, setIsInsertMenuOpen] = useState(false)
+  const [selectedElement, setSelectedElement] = useState<{ slideId: string; elementId: string } | null>(null)
+  const [editingElementId, setEditingElementId] = useState<string | null>(null)
   const [dragState, setDragState] = useState<{
     slideId: string
     elementId: string
@@ -386,6 +392,9 @@ export function SlideEditorPage() {
       content: 'Double-click to edit',
       xPercent: 50,
       yPercent: 20,
+      fontSize: 20,
+      isBold: false,
+      isItalic: false,
     }
     setCanvasSlides((prev) => prev.map((s) => (s.id === activeSlideId ? { ...s, elements: [...s.elements, newElement] } : s)))
     scheduleSaveSlide(activeSlideId)
@@ -557,6 +566,12 @@ export function SlideEditorPage() {
                             className="absolute group"
                             style={{ left: `${el.xPercent}%`, top: `${el.yPercent}%`, transform: 'translate(-50%, -50%)' }}
                             onDragStart={(ev) => ev.preventDefault()}
+                            onClick={(e) => { e.stopPropagation(); setSelectedElement({ slideId: slide.id, elementId: el.id }) }}
+                            onMouseDownCapture={(e) => {
+                              const t = e.target as HTMLElement
+                              if (t && (t.closest('[data-canvas-text="true"]') || t.closest('[data-inline-toolbar="true"]'))) return
+                              if (editingElementId !== el.id) handleElementMouseDown(slide.id, el, e)
+                            }}
                           >
                             {/* Drag handle */}
                             <button
@@ -568,13 +583,77 @@ export function SlideEditorPage() {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v12m6-6H6" />
                               </svg>
                             </button>
-                            {el.type === 'text' && (
-                              <div
-                                contentEditable
-                                suppressContentEditableWarning
-                                className="px-2 py-1 text-gray-900 dark:text-white bg-white/70 dark:bg-gray-900/50 rounded border border-gray-200 dark:border-gray-700 outline-none focus:ring-2 focus:ring-blue-500"
-                                onInput={(e) => {
-                                  const text = (e.currentTarget.textContent ?? '')
+                          {el.type === 'text' && (
+                            <>
+                              {selectedElement?.elementId === el.id && selectedElement?.slideId === slide.id && (
+                                <div className="absolute -top-9 left-1/2 -translate-x-1/2 z-10" data-inline-toolbar="true" onMouseDown={(e) => e.stopPropagation()}>
+                                  <div className="flex items-center space-x-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow rounded-full px-2 py-1">
+                                    <Button
+                                      variant={el.isBold ? 'primary' : 'secondary'}
+                                      size="sm"
+                                      className="rounded-full px-3"
+                                      onClick={() => {
+                                        setCanvasSlides((prev) => prev.map((s) => s.id === slide.id ? { ...s, elements: s.elements.map((inner) => inner.id === el.id ? { ...inner, isBold: !inner.isBold } : inner) } : s))
+                                        scheduleSaveSlide(slide.id)
+                                      }}
+                                      title="Bold"
+                                    >
+                                      <span className="font-bold">B</span>
+                                    </Button>
+                                    <Button
+                                      variant={el.isItalic ? 'primary' : 'secondary'}
+                                      size="sm"
+                                      className="rounded-full px-3"
+                                      onClick={() => {
+                                        setCanvasSlides((prev) => prev.map((s) => s.id === slide.id ? { ...s, elements: s.elements.map((inner) => inner.id === el.id ? { ...inner, isItalic: !inner.isItalic } : inner) } : s))
+                                        scheduleSaveSlide(slide.id)
+                                      }}
+                                      title="Italic"
+                                    >
+                                      <span className="italic">I</span>
+                                    </Button>
+                                    <div className="w-px h-4 bg-gray-200 dark:bg-gray-700 mx-1" />
+                                    <div className="flex items-center bg-gray-50 dark:bg-gray-700 rounded-full px-1 py-0.5 space-x-1 border border-gray-200 dark:border-gray-600">
+                                      <Button
+                                        variant="secondary"
+                                        size="sm"
+                                        className="rounded-full px-3"
+                                        onClick={() => {
+                                          setCanvasSlides((prev) => prev.map((s) => s.id === slide.id ? { ...s, elements: s.elements.map((inner) => inner.id === el.id ? { ...inner, fontSize: Math.max(8, (inner.fontSize ?? 20) - 2) } : inner) } : s))
+                                          scheduleSaveSlide(slide.id)
+                                        }}
+                                        title="Decrease font size"
+                                      >
+                                        -
+                                      </Button>
+                                      <span className="text-xs text-gray-700 dark:text-gray-300 w-10 text-center">{(el.fontSize ?? 20)}px</span>
+                                      <Button
+                                        variant="secondary"
+                                        size="sm"
+                                        className="rounded-full px-3"
+                                        onClick={() => {
+                                          setCanvasSlides((prev) => prev.map((s) => s.id === slide.id ? { ...s, elements: s.elements.map((inner) => inner.id === el.id ? { ...inner, fontSize: Math.min(120, (inner.fontSize ?? 20) + 2) } : inner) } : s))
+                                          scheduleSaveSlide(slide.id)
+                                        }}
+                                        title="Increase font size"
+                                      >
+                                        +
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+
+                              <CanvasText
+                                content={el.content}
+                                className={`px-2 py-1 text-gray-900 dark:text-white bg-white/70 dark:bg-gray-900/50 rounded border ${selectedElement?.elementId === el.id && selectedElement?.slideId === slide.id ? 'border-blue-400 ring-2 ring-blue-200' : 'border-gray-200 dark:border-gray-700'} outline-none focus:ring-2 focus:ring-blue-500`}
+                                style={{
+                                  fontWeight: el.isBold ? 700 : 400,
+                                  fontStyle: el.isItalic ? 'italic' : 'normal',
+                                  fontSize: `${el.fontSize ?? 20}px`,
+                                }}
+                                isEditing={editingElementId === el.id}
+                                onInputText={(text) => {
                                   setCanvasSlides((prev) =>
                                     prev.map((s) =>
                                       s.id === slide.id
@@ -589,10 +668,16 @@ export function SlideEditorPage() {
                                   )
                                   scheduleSaveSlide(slide.id)
                                 }}
-                              >
-                                {el.content}
-                              </div>
-                            )}
+                                onFocus={() => {
+                                  setEditingElementId(el.id)
+                                  setSelectedElement({ slideId: slide.id, elementId: el.id })
+                                }}
+                                onBlur={() => {
+                                  setEditingElementId(null)
+                                }}
+                              />
+                            </>
+                          )}
                           </div>
                         ))}
 
@@ -636,6 +721,8 @@ export function SlideEditorPage() {
                 {/* Divider */}
                 <div className="w-px h-6 bg-gray-200 dark:bg-gray-700" />
 
+                
+
                 {/* Add Slide */}
                 <Button onClick={handleAddSlide} size="sm" className="rounded-full">
                   <span className="flex items-center">
@@ -672,6 +759,12 @@ export function SlideEditorPage() {
                           className="absolute group"
                           style={{ left: `${el.xPercent}%`, top: `${el.yPercent}%`, transform: 'translate(-50%, -50%)' }}
                           onDragStart={(ev) => ev.preventDefault()}
+                          onClick={(e) => { e.stopPropagation(); setSelectedElement({ slideId: slide.id, elementId: el.id }) }}
+                            onMouseDownCapture={(e) => {
+                              const t = e.target as HTMLElement
+                              if (t && (t.closest('[data-canvas-text="true"]') || t.closest('[data-inline-toolbar="true"]'))) return
+                              if (editingElementId !== el.id) handleElementMouseDown(slide.id, el, e)
+                            }}
                         >
                           <button
                             className="absolute -top-4 -left-4 p-1 rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow cursor-move opacity-0 group-hover:opacity-100 transition-opacity"
@@ -683,29 +776,99 @@ export function SlideEditorPage() {
                             </svg>
                           </button>
                           {el.type === 'text' && (
-                            <div
-                              contentEditable
-                              suppressContentEditableWarning
-                              className="px-2 py-1 text-gray-900 dark:text-white bg-white/70 dark:bg-gray-900/50 rounded border border-gray-200 dark:border-gray-700 outline-none focus:ring-2 focus:ring-blue-500"
-                              onInput={(e) => {
-                                const text = (e.currentTarget.textContent ?? '')
-                                setCanvasSlides((prev) =>
-                                  prev.map((s) =>
-                                    s.id === slide.id
-                                      ? {
-                                          ...s,
-                                          elements: s.elements.map((inner) =>
-                                            inner.id === el.id ? { ...inner, content: text } : inner
-                                          ),
-                                        }
-                                      : s
+                            <>
+                              {selectedElement?.elementId === el.id && selectedElement?.slideId === slide.id && (
+                                <div className="absolute -top-9 left-1/2 -translate-x-1/2 z-10" data-inline-toolbar="true" onMouseDown={(e) => e.stopPropagation()}>
+                                  <div className="flex items-center space-x-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow rounded-full px-2 py-1">
+                                    <Button
+                                      variant={el.isBold ? 'primary' : 'secondary'}
+                                      size="sm"
+                                      className="rounded-full px-3"
+                                      onClick={() => {
+                                        setCanvasSlides((prev) => prev.map((s) => s.id === slide.id ? { ...s, elements: s.elements.map((inner) => inner.id === el.id ? { ...inner, isBold: !inner.isBold } : inner) } : s))
+                                        scheduleSaveSlide(slide.id)
+                                      }}
+                                      title="Bold"
+                                    >
+                                      <span className="font-bold">B</span>
+                                    </Button>
+                                    <Button
+                                      variant={el.isItalic ? 'primary' : 'secondary'}
+                                      size="sm"
+                                      className="rounded-full px-3"
+                                      onClick={() => {
+                                        setCanvasSlides((prev) => prev.map((s) => s.id === slide.id ? { ...s, elements: s.elements.map((inner) => inner.id === el.id ? { ...inner, isItalic: !inner.isItalic } : inner) } : s))
+                                        scheduleSaveSlide(slide.id)
+                                      }}
+                                      title="Italic"
+                                    >
+                                      <span className="italic">I</span>
+                                    </Button>
+                                    <div className="w-px h-4 bg-gray-200 dark:bg-gray-700 mx-1" />
+                                    <div className="flex items-center bg-gray-50 dark:bg-gray-700 rounded-full px-1 py-0.5 space-x-1 border border-gray-200 dark:border-gray-600">
+                                      <Button
+                                        variant="secondary"
+                                        size="sm"
+                                        className="rounded-full px-3"
+                                        onClick={() => {
+                                          setCanvasSlides((prev) => prev.map((s) => s.id === slide.id ? { ...s, elements: s.elements.map((inner) => inner.id === el.id ? { ...inner, fontSize: Math.max(8, (inner.fontSize ?? 20) - 2) } : inner) } : s))
+                                          scheduleSaveSlide(slide.id)
+                                        }}
+                                        title="Decrease font size"
+                                      >
+                                        -
+                                      </Button>
+                                      <span className="text-xs text-gray-700 dark:text-gray-300 w-10 text-center">{(el.fontSize ?? 20)}px</span>
+                                      <Button
+                                        variant="secondary"
+                                        size="sm"
+                                        className="rounded-full px-3"
+                                        onClick={() => {
+                                          setCanvasSlides((prev) => prev.map((s) => s.id === slide.id ? { ...s, elements: s.elements.map((inner) => inner.id === el.id ? { ...inner, fontSize: Math.min(120, (inner.fontSize ?? 20) + 2) } : inner) } : s))
+                                          scheduleSaveSlide(slide.id)
+                                        }}
+                                        title="Increase font size"
+                                      >
+                                        +
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+
+                              <CanvasText
+                                content={el.content}
+                                className={`px-2 py-1 text-gray-900 dark:text-white bg-white/70 dark:bg-gray-900/50 rounded border ${selectedElement?.elementId === el.id && selectedElement?.slideId === slide.id ? 'border-blue-400 ring-2 ring-blue-200' : 'border-gray-200 dark:border-gray-700'} outline-none focus:ring-2 focus:ring-blue-500`}
+                                style={{
+                                  fontWeight: el.isBold ? 700 : 400,
+                                  fontStyle: el.isItalic ? 'italic' : 'normal',
+                                  fontSize: `${el.fontSize ?? 20}px`,
+                                }}
+                                isEditing={editingElementId === el.id}
+                                onInputText={(text) => {
+                                  setCanvasSlides((prev) =>
+                                    prev.map((s) =>
+                                      s.id === slide.id
+                                        ? {
+                                            ...s,
+                                            elements: s.elements.map((inner) =>
+                                              inner.id === el.id ? { ...inner, content: text } : inner
+                                            ),
+                                          }
+                                        : s
+                                    )
                                   )
-                                )
-                                scheduleSaveSlide(slide.id)
-                              }}
-                            >
-                              {el.content}
-                            </div>
+                                  scheduleSaveSlide(slide.id)
+                                }}
+                                onFocus={() => {
+                                  setEditingElementId(el.id)
+                                  setSelectedElement({ slideId: slide.id, elementId: el.id })
+                                }}
+                                onBlur={() => {
+                                  setEditingElementId(null)
+                                }}
+                              />
+                            </>
                           )}
                         </div>
                       ))}
@@ -743,6 +906,9 @@ export function SlideEditorPage() {
                 )}
               </div>
               <div className="w-px h-6 bg-gray-200 dark:bg-gray-700" />
+
+              
+
               <Button onClick={handleAddSlide} size="sm" className="rounded-full">
                 <span className="flex items-center">
                   <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -827,4 +993,51 @@ function SlideCursors({ slideId }: { slideId: string }) {
     </>
   )
 }
+
+type CanvasTextProps = {
+  content: string
+  className?: string
+  style?: CSSProperties
+  isEditing: boolean
+  onInputText: (text: string) => void
+  onFocus?: () => void
+  onBlur?: () => void
+}
+
+const shallowEqual = (a?: Record<string, unknown>, b?: Record<string, unknown>) => {
+  if (a === b) return true
+  if (!a || !b) return false
+  const aKeys = Object.keys(a)
+  const bKeys = Object.keys(b)
+  if (aKeys.length !== bKeys.length) return false
+  for (const k of aKeys) {
+    if (a[k] !== b[k]) return false
+  }
+  return true
+}
+
+const CanvasText = memo(function CanvasText({ content, className, style, isEditing: _isEditing, onInputText, onFocus, onBlur }: CanvasTextProps) {
+  const handleInput = useCallback<FormEventHandler<HTMLDivElement>>((e) => {
+    const text = e.currentTarget.textContent ?? ''
+    onInputText(text)
+  }, [onInputText])
+
+  return (
+    <div
+      contentEditable
+      suppressContentEditableWarning
+      data-canvas-text="true"
+      className={className}
+      style={style}
+      onInput={handleInput}
+      onFocus={onFocus}
+      onBlur={onBlur}
+    >
+      {content}
+    </div>
+  )
+}, (prev, next) => {
+  if (next.isEditing) return true
+  return prev.content === next.content && prev.className === next.className && shallowEqual(prev.style as any, next.style as any) && prev.isEditing === next.isEditing
+})
 
