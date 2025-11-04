@@ -1,12 +1,13 @@
 import { useEffect, useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
-import { fetchDeckById, updateDeckTitle, updateSlideYDoc, createSlide } from '../lib/api/decks'
+import { fetchDeckById, updateDeckTitle, updateSlideYDoc, createSlide, updateDeckVisibility } from '../lib/api/decks'
 import { DeckWithSlides } from '../types/deck'
 import { LoadingSpinner } from '../components/ui/LoadingSpinner'
 import { Button } from '../components/ui/Button'
 import { RoomProvider, ClientSideSuspense, useOthers } from '@liveblocks/react/suspense'
 import { useMyPresence } from '@liveblocks/react'
+import { useAuthStore } from '../store/auth'
 
 export function SlideEditorPage() {
   const { slideId } = useParams<{ slideId: string }>()
@@ -121,6 +122,10 @@ export function SlideEditorPage() {
   const totalSlides = canvasSlides.length
   // Index helper (unused currently)
   const roomId = deck ? `deck_${deck.id}` : undefined
+
+  const { user } = useAuthStore()
+  const isOwner = !!(deck && user && user.id === deck.owner_id)
+  const deckVisibility: 'private' | 'users' = (deck as any)?.visibility ?? 'private'
 
 
   // Close insert menu on outside click
@@ -468,17 +473,58 @@ export function SlideEditorPage() {
             <span className="text-sm text-gray-500 dark:text-gray-400">
               {totalSlides} {totalSlides === 1 ? 'slide' : 'slides'}
             </span>
-            {deck?.id && (
-              <button
-                onClick={async () => {
-                  const url = `${window.location.origin}/slide/${deck.id}`
-                  await navigator.clipboard.writeText(url)
-                  toast.success('Link copied!')
-                }}
-                className="ml-2 px-3 py-1.5 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors"
-              >
-                Share
-              </button>
+            {deck?.id && isOwner && (
+              <div className="flex items-center space-x-2">
+                {deckVisibility === 'private' ? (
+                  <button
+                    onClick={async () => {
+                      const ok = window.confirm('Enable sharing with all authenticated users? They will be able to view and edit this deck.')
+                      if (!ok) return
+                      const { data, error } = await updateDeckVisibility(deck.id, 'users')
+                      if (error || !data) {
+                        toast.error('Failed to enable sharing')
+                        return
+                      }
+                      setDeck({ ...deck, visibility: 'users', updated_at: data.updated_at })
+                      const url = `${window.location.origin}/slide/${deck.id}`
+                      await navigator.clipboard.writeText(url)
+                      toast.success('Sharing enabled. Link copied!')
+                    }}
+                    className="ml-2 px-3 py-1.5 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors"
+                  >
+                    Share
+                  </button>
+                ) : (
+                  <>
+                    <button
+                      onClick={async () => {
+                        const url = `${window.location.origin}/slide/${deck.id}`
+                        await navigator.clipboard.writeText(url)
+                        toast.success('Link copied!')
+                      }}
+                      className="ml-2 px-3 py-1.5 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors"
+                    >
+                      Share
+                    </button>
+                    <button
+                      onClick={async () => {
+                        const ok = window.confirm('Disable sharing for all users? Collaborators will lose access.')
+                        if (!ok) return
+                        const { data, error } = await updateDeckVisibility(deck.id, 'private')
+                        if (error || !data) {
+                          toast.error('Failed to disable sharing')
+                          return
+                        }
+                        setDeck({ ...deck, visibility: 'private', updated_at: data.updated_at })
+                        toast.success('Sharing disabled')
+                      }}
+                      className="px-3 py-1.5 text-sm bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-100 rounded-md transition-colors"
+                    >
+                      Disable sharing
+                    </button>
+                  </>
+                )}
+              </div>
             )}
           </div>
         </div>

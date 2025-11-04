@@ -145,6 +145,33 @@ export async function updateDeckTitle(deckId: string, title: string): Promise<{ 
 }
 
 /**
+ * Update a deck's visibility (private | users)
+ */
+export async function updateDeckVisibility(
+  deckId: string,
+  visibility: 'private' | 'users'
+): Promise<{ data: Deck | null; error: Error | null }> {
+  try {
+    const { data, error } = await supabase
+      .from('decks')
+      .update({ visibility })
+      .eq('id', deckId)
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Error updating deck visibility:', error)
+      return { data: null, error: new Error(error.message) }
+    }
+
+    return { data: data as Deck, error: null }
+  } catch (err) {
+    console.error('Unexpected error updating deck visibility:', err)
+    return { data: null, error: err as Error }
+  }
+}
+
+/**
  * Delete a deck (cascades to delete all slides)
  */
 export async function deleteDeck(deckId: string): Promise<{ error: Error | null }> {

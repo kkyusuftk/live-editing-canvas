@@ -6,6 +6,7 @@ export interface Deck {
   title: string           // "Untitled deck" by default
   created_at: string      // ISO timestamp
   updated_at: string      // ISO timestamp
+  visibility: 'private' | 'users' // Sharing scope for Phase 4
 }
 
 export interface Slide {
