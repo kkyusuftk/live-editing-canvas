@@ -1,5 +1,5 @@
 import { supabase } from '../supabase'
-import { Deck, DeckWithSlides } from '../../types/deck'
+import { Deck, DeckWithSlides, Slide } from '../../types/deck'
 
 /**
  * Fetch all decks for the authenticated user
@@ -189,6 +189,32 @@ export async function updateSlideYDoc(slideId: string, yDoc: Uint8Array): Promis
   } catch (err) {
     console.error('Unexpected error updating slide y_doc:', err)
     return { error: err as Error }
+  }
+}
+
+/**
+ * Create a slide for a deck at a given position
+ */
+export async function createSlide(
+  deckId: string,
+  position: number
+): Promise<{ data: Slide | null; error: Error | null }> {
+  try {
+    const { data, error } = await supabase
+      .from('slides')
+      .insert({ deck_id: deckId, position })
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Error creating slide:', error)
+      return { data: null, error: new Error(error.message) }
+    }
+
+    return { data: data as Slide, error: null }
+  } catch (err) {
+    console.error('Unexpected error creating slide:', err)
+    return { data: null, error: err as Error }
   }
 }
 
