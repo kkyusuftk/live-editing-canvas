@@ -166,3 +166,29 @@ export async function deleteDeck(deckId: string): Promise<{ error: Error | null 
   }
 }
 
+/**
+ * Update a slide's Yjs document snapshot (bytea)
+ */
+export async function updateSlideYDoc(slideId: string, yDoc: Uint8Array): Promise<{ error: Error | null }> {
+  try {
+    // Encode to Postgres bytea hex format (e.g., "\\xDEADBEEF") to avoid JSON corruption
+    const hex = Array.from(yDoc).map((b) => b.toString(16).padStart(2, '0')).join('')
+    const bytea = `\\x${hex}`
+
+    const { error } = await supabase
+      .from('slides')
+      .update({ y_doc: bytea })
+      .eq('id', slideId)
+
+    if (error) {
+      console.error('Error updating slide y_doc:', error)
+      return { error: new Error(error.message) }
+    }
+
+    return { error: null }
+  } catch (err) {
+    console.error('Unexpected error updating slide y_doc:', err)
+    return { error: err as Error }
+  }
+}
+

@@ -1,14 +1,16 @@
 import { useEffect, useState, useRef } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
-import { Canvas } from '../components/Canvas'
 import { fetchDeckById, updateDeckTitle } from '../lib/api/decks'
 import { DeckWithSlides } from '../types/deck'
 import { LoadingSpinner } from '../components/ui/LoadingSpinner'
+import { RoomProvider, ClientSideSuspense } from '@liveblocks/react/suspense'
+import { LiveEditor } from '../components/LiveEditor'
 
 export function SlideEditorPage() {
   const { slideId } = useParams<{ slideId: string }>()
   const navigate = useNavigate()
+  const location = useLocation()
   const [deck, setDeck] = useState<DeckWithSlides | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -16,6 +18,8 @@ export function SlideEditorPage() {
   const [editedTitle, setEditedTitle] = useState('')
   const [isSavingTitle, setIsSavingTitle] = useState(false)
   const titleInputRef = useRef<HTMLInputElement>(null)
+
+  const params = new URLSearchParams(location.search)
 
   useEffect(() => {
     if (!slideId) {
@@ -162,6 +166,10 @@ export function SlideEditorPage() {
     )
   }
 
+  const activeSlide = deck?.slides?.[0]
+  const computedRoomId = activeSlide ? `slide_${activeSlide.id}` : (slideId ? `slide_${slideId}` : undefined)
+  const roomId = params.get('room') || computedRoomId
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
       {/* Top bar */}
@@ -244,12 +252,30 @@ export function SlideEditorPage() {
             <span className="text-sm text-gray-500 dark:text-gray-400">
               {deck.slides.length} {deck.slides.length === 1 ? 'slide' : 'slides'}
             </span>
+            {slideId && roomId && (
+              <button
+                onClick={async () => {
+                  const url = `${window.location.origin}/slide/${slideId}?room=${roomId}`
+                  await navigator.clipboard.writeText(url)
+                  toast.success('Link copied!')
+                }}
+                className="ml-2 px-3 py-1.5 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors"
+              >
+                Share
+              </button>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Canvas area */}
-      <Canvas deckId={deck.id} />
+      {/* Collaborative editor (MVP) */}
+      {roomId && activeSlide && (
+        <RoomProvider id={roomId}>
+          <ClientSideSuspense fallback={<div className="py-6"><LoadingSpinner /></div>}>
+            <LiveEditor slideId={activeSlide.id} initialYUpdate={activeSlide.y_doc} />
+          </ClientSideSuspense>
+        </RoomProvider>
+      )}
     </div>
   )
 }
