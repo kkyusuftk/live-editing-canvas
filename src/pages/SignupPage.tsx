@@ -1,5 +1,6 @@
 import { useState, FormEvent } from 'react'
 import { Link, useNavigate, Navigate } from 'react-router-dom'
+import { toast } from 'react-hot-toast'
 import { useAuthStore } from '../store/auth'
 
 export function SignupPage() {
@@ -68,7 +69,9 @@ export function SignupPage() {
 
     if (signUpError) {
       setError(signUpError.message)
+      toast.error('Signup failed')
     } else {
+      toast.success('Account created successfully!')
       // Redirect to home on successful signup
       navigate('/home')
     }

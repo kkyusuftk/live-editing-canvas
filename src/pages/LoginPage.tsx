@@ -1,5 +1,6 @@
 import { useState, FormEvent } from 'react'
 import { Link, useNavigate, useLocation, Navigate } from 'react-router-dom'
+import { toast } from 'react-hot-toast'
 import { useAuthStore } from '../store/auth'
 
 export function LoginPage() {
@@ -43,7 +44,9 @@ export function LoginPage() {
 
     if (signInError) {
       setError(signInError.message)
+      toast.error('Login failed')
     } else {
+      toast.success('Welcome back!')
       navigate(from, { replace: true })
     }
   }
