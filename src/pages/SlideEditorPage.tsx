@@ -9,6 +9,7 @@ import { Button } from '../components/ui/Button'
 import { RoomProvider, ClientSideSuspense, useOthers } from '@liveblocks/react/suspense'
 import { useMyPresence } from '@liveblocks/react'
 import { useAuthStore } from '../store/auth'
+import { PlusIcon } from '@radix-ui/react-icons'
 
 export function SlideEditorPage() {
   const { slideId } = useParams<{ slideId: string }>()
@@ -294,6 +295,19 @@ export function SlideEditorPage() {
     toast.success('Title updated!')
   }
 
+  const handleGlobalMouseDownCapture = (e: React.MouseEvent) => {
+    if (!editingElementId) return
+    const t = e.target as HTMLElement
+    const inToolbar = !!t.closest('[data-inline-toolbar="true"]')
+    const inCurrentText = !!t.closest(`[data-canvas-text="true"][data-element-id="${editingElementId}"]`)
+    if (inToolbar || inCurrentText) return
+    const active = document.activeElement as HTMLElement | null
+    if (active && active.hasAttribute('data-canvas-text')) {
+      active.blur()
+    }
+    setEditingElementId(null)
+  }
+
   const handleTitleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault()
@@ -401,7 +415,7 @@ export function SlideEditorPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900" onMouseDownCapture={handleGlobalMouseDownCapture}>
       {/* Top bar */}
       <div className="sticky top-0 z-10 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3 shadow-sm">
         <div className="flex items-center space-x-4">
@@ -563,61 +577,46 @@ export function SlideEditorPage() {
                         {slide.elements.map((el) => (
                           <div
                             key={el.id}
-                            className="absolute group"
+                            className="absolute group cursor-move"
                             style={{ left: `${el.xPercent}%`, top: `${el.yPercent}%`, transform: 'translate(-50%, -50%)' }}
                             onDragStart={(ev) => ev.preventDefault()}
                             onClick={(e) => { e.stopPropagation(); setSelectedElement({ slideId: slide.id, elementId: el.id }) }}
                             onMouseDownCapture={(e) => {
                               const t = e.target as HTMLElement
-                              if (t && (t.closest('[data-canvas-text="true"]') || t.closest('[data-inline-toolbar="true"]'))) return
+                              if (t && t.closest('[data-inline-toolbar="true"]')) return
                               if (editingElementId !== el.id) handleElementMouseDown(slide.id, el, e)
                             }}
                           >
-                            {/* Drag handle */}
-                            <button
-                              className="absolute -top-4 -left-4 p-1 rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow cursor-move opacity-0 group-hover:opacity-100 transition-opacity"
-                              onMouseDown={(e) => handleElementMouseDown(slide.id, el, e)}
-                              aria-label="Drag element"
-                            >
-                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v12m6-6H6" />
-                              </svg>
-                            </button>
                           {el.type === 'text' && (
                             <>
                               {selectedElement?.elementId === el.id && selectedElement?.slideId === slide.id && (
-                                <div className="absolute -top-9 left-1/2 -translate-x-1/2 z-10" data-inline-toolbar="true" onMouseDown={(e) => e.stopPropagation()}>
-                                  <div className="flex items-center space-x-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow rounded-full px-2 py-1">
+                                <div className="absolute -top-14 left-1/2 -translate-x-1/2 z-10" data-inline-toolbar="true" onMouseDown={(e) => e.stopPropagation()}>
+                                  <div className="flex items-center space-x-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow rounded-md px-2 py-1">
                                     <Button
                                       variant={el.isBold ? 'primary' : 'secondary'}
                                       size="sm"
-                                      className="rounded-full px-3"
                                       onClick={() => {
                                         setCanvasSlides((prev) => prev.map((s) => s.id === slide.id ? { ...s, elements: s.elements.map((inner) => inner.id === el.id ? { ...inner, isBold: !inner.isBold } : inner) } : s))
                                         scheduleSaveSlide(slide.id)
                                       }}
-                                      title="Bold"
                                     >
                                       <span className="font-bold">B</span>
                                     </Button>
                                     <Button
                                       variant={el.isItalic ? 'primary' : 'secondary'}
                                       size="sm"
-                                      className="rounded-full px-3"
                                       onClick={() => {
                                         setCanvasSlides((prev) => prev.map((s) => s.id === slide.id ? { ...s, elements: s.elements.map((inner) => inner.id === el.id ? { ...inner, isItalic: !inner.isItalic } : inner) } : s))
                                         scheduleSaveSlide(slide.id)
                                       }}
-                                      title="Italic"
                                     >
                                       <span className="italic">I</span>
                                     </Button>
                                     <div className="w-px h-4 bg-gray-200 dark:bg-gray-700 mx-1" />
-                                    <div className="flex items-center bg-gray-50 dark:bg-gray-700 rounded-full px-1 py-0.5 space-x-1 border border-gray-200 dark:border-gray-600">
+                                    <div className="flex items-center bg-gray-50 dark:bg-gray-700 rounded-md px-1 py-0.5 space-x-1 border border-gray-200 dark:border-gray-600">
                                       <Button
                                         variant="secondary"
                                         size="sm"
-                                        className="rounded-full px-3"
                                         onClick={() => {
                                           setCanvasSlides((prev) => prev.map((s) => s.id === slide.id ? { ...s, elements: s.elements.map((inner) => inner.id === el.id ? { ...inner, fontSize: Math.max(8, (inner.fontSize ?? 20) - 2) } : inner) } : s))
                                           scheduleSaveSlide(slide.id)
@@ -630,7 +629,6 @@ export function SlideEditorPage() {
                                       <Button
                                         variant="secondary"
                                         size="sm"
-                                        className="rounded-full px-3"
                                         onClick={() => {
                                           setCanvasSlides((prev) => prev.map((s) => s.id === slide.id ? { ...s, elements: s.elements.map((inner) => inner.id === el.id ? { ...inner, fontSize: Math.min(120, (inner.fontSize ?? 20) + 2) } : inner) } : s))
                                           scheduleSaveSlide(slide.id)
@@ -653,6 +651,7 @@ export function SlideEditorPage() {
                                   fontSize: `${el.fontSize ?? 20}px`,
                                 }}
                                 isEditing={editingElementId === el.id}
+                                elementId={el.id}
                                 onInputText={(text) => {
                                   setCanvasSlides((prev) =>
                                     prev.map((s) =>
@@ -698,9 +697,7 @@ export function SlideEditorPage() {
                 <div className="relative" ref={insertMenuRef}>
                   <Button variant="secondary" size="sm" className="rounded-full" onClick={() => setIsInsertMenuOpen((v) => !v)}>
                     <span className="flex items-center">
-                      <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                      </svg>
+                      <PlusIcon className='mr-2'/>
                       Insert element
                     </span>
                   </Button>
@@ -756,25 +753,16 @@ export function SlideEditorPage() {
                       {slide.elements.map((el) => (
                         <div
                           key={el.id}
-                          className="absolute group"
+                          className="absolute group cursor-move"
                           style={{ left: `${el.xPercent}%`, top: `${el.yPercent}%`, transform: 'translate(-50%, -50%)' }}
                           onDragStart={(ev) => ev.preventDefault()}
                           onClick={(e) => { e.stopPropagation(); setSelectedElement({ slideId: slide.id, elementId: el.id }) }}
                             onMouseDownCapture={(e) => {
                               const t = e.target as HTMLElement
-                              if (t && (t.closest('[data-canvas-text="true"]') || t.closest('[data-inline-toolbar="true"]'))) return
+                              if (t && t.closest('[data-inline-toolbar="true"]')) return
                               if (editingElementId !== el.id) handleElementMouseDown(slide.id, el, e)
                             }}
                         >
-                          <button
-                            className="absolute -top-4 -left-4 p-1 rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow cursor-move opacity-0 group-hover:opacity-100 transition-opacity"
-                            onMouseDown={(e) => handleElementMouseDown(slide.id, el, e)}
-                            aria-label="Drag element"
-                          >
-                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v12m6-6H6" />
-                            </svg>
-                          </button>
                           {el.type === 'text' && (
                             <>
                               {selectedElement?.elementId === el.id && selectedElement?.slideId === slide.id && (
@@ -845,6 +833,7 @@ export function SlideEditorPage() {
                                   fontSize: `${el.fontSize ?? 20}px`,
                                 }}
                                 isEditing={editingElementId === el.id}
+                                elementId={el.id}
                                 onInputText={(text) => {
                                   setCanvasSlides((prev) =>
                                     prev.map((s) =>
@@ -1002,6 +991,7 @@ type CanvasTextProps = {
   onInputText: (text: string) => void
   onFocus?: () => void
   onBlur?: () => void
+  elementId: string
 }
 
 const shallowEqual = (a?: Record<string, unknown>, b?: Record<string, unknown>) => {
@@ -1016,7 +1006,7 @@ const shallowEqual = (a?: Record<string, unknown>, b?: Record<string, unknown>) 
   return true
 }
 
-const CanvasText = memo(function CanvasText({ content, className, style, isEditing: _isEditing, onInputText, onFocus, onBlur }: CanvasTextProps) {
+const CanvasText = memo(function CanvasText({ content, className, style, isEditing: _isEditing, onInputText, onFocus, onBlur, elementId }: CanvasTextProps) {
   const handleInput = useCallback<FormEventHandler<HTMLDivElement>>((e) => {
     const text = e.currentTarget.textContent ?? ''
     onInputText(text)
@@ -1027,6 +1017,7 @@ const CanvasText = memo(function CanvasText({ content, className, style, isEditi
       contentEditable
       suppressContentEditableWarning
       data-canvas-text="true"
+      data-element-id={elementId}
       className={className}
       style={style}
       onInput={handleInput}

@@ -7,6 +7,8 @@ import { EmptyState } from '../components/EmptyState'
 import { LoadingSpinner } from '../components/ui/LoadingSpinner'
 import { fetchUserDecks, createDeck } from '../lib/api/decks'
 import { Deck } from '../types/deck'
+import { Button } from '../components/ui'
+import { PlusIcon } from '@radix-ui/react-icons'
 
 export function HomePage() {
   const { user, signOut } = useAuthStore()
@@ -81,12 +83,9 @@ export function HomePage() {
               <span className="text-gray-700 dark:text-gray-300 hidden sm:inline">
                 {user?.user_metadata?.username || user?.email}
               </span>
-              <button
-                onClick={handleSignOut}
-                className="px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              >
+              <Button variant='danger' onClick={handleSignOut}>
                 Sign out
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -104,28 +103,17 @@ export function HomePage() {
                 Create and manage your presentations
               </p>
             </div>
-            <button
+            <Button
               onClick={handleAddSlides}
               disabled={creating}
-              className="mt-4 sm:mt-0 inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-colors"
+              size="lg"
             >
-              {creating ? (
                 <>
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Creating...
-                </>
-              ) : (
-                <>
-                  <svg className="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                  </svg>
+                  <PlusIcon className='mr-2'/>
                   Add Slides
                 </>
-              )}
-            </button>
+
+            </Button>
           </div>
 
           {/* Deck list */}
