@@ -3,7 +3,7 @@ import { useOthers } from "@liveblocks/react/suspense";
 import { useRoom } from "@liveblocks/react";
 import { LiveblocksYjsProvider } from "@liveblocks/yjs";
 import * as Y from "yjs";
-import { updateSlideYDoc } from "../lib/api/decks";
+import { updateSlideYDoc } from "../lib/api/decksApi";
 
 interface LiveEditorProps {
 	slideId: string;

@@ -8,8 +8,9 @@ import {
 	updateDeckTitle,
 	updateDeckVisibility,
 	createSlide,
-} from "../api/decks";
+} from "../api/decksApi";
 import { useAuthStore } from "../../store/auth";
+import type { Deck, DeckWithSlides } from "../../types/deckTypes";
 
 export function useUserDecks() {
 	const { initialized, session } = useAuthStore();
@@ -47,7 +48,7 @@ export function useCreateDeck() {
 			return data!;
 		},
 		onSuccess: (newDeck) => {
-			qc.setQueryData(queryKeys.decks.list(), (prev: any) => [
+			qc.setQueryData(queryKeys.decks.list(), (prev: DeckWithSlides[] | undefined) => [
 				newDeck,
 				...(prev ?? []),
 			]);
@@ -65,8 +66,8 @@ export function useDeleteDeck() {
 		},
 		onMutate: async (deckId) => {
 			const key = queryKeys.decks.list();
-			const prev = qc.getQueryData<any[]>(key);
-			qc.setQueryData<any[]>(key, (curr) =>
+			const prev = qc.getQueryData<Deck[]>(key);
+			qc.setQueryData<Deck[]>(key, (curr) =>
 				(curr ?? []).filter((d) => d.id !== deckId),
 			);
 			return { prev };
@@ -92,10 +93,10 @@ export function useUpdateDeckTitle() {
 			return data;
 		},
 		onSuccess: (updated) => {
-			qc.setQueryData(queryKeys.decks.detail(updated.id), (prev: any) =>
+			qc.setQueryData(queryKeys.decks.detail(updated.id), (prev: DeckWithSlides | undefined) =>
 				prev ? { ...prev, ...updated } : updated,
 			);
-			qc.setQueryData<any[]>(queryKeys.decks.list(), (prev) =>
+			qc.setQueryData<Deck[]>(queryKeys.decks.list(), (prev) =>
 				(prev ?? []).map((d) =>
 					d.id === updated.id
 						? { ...d, title: updated.title, updated_at: updated.updated_at }
@@ -119,10 +120,10 @@ export function useUpdateDeckVisibility() {
 			return data;
 		},
 		onSuccess: (updated) => {
-			qc.setQueryData(queryKeys.decks.detail(updated.id), (prev: any) =>
+			qc.setQueryData(queryKeys.decks.detail(updated.id), (prev: DeckWithSlides | undefined) =>
 				prev ? { ...prev, ...updated } : updated,
 			);
-			qc.setQueryData<any[]>(queryKeys.decks.list(), (prev) =>
+			qc.setQueryData<Deck[]>(queryKeys.decks.list(), (prev) =>
 				(prev ?? []).map((d) =>
 					d.id === updated.id
 						? {
@@ -150,7 +151,7 @@ export function useCreateSlide() {
 		},
 		onSuccess: ({ deckId, slide }) => {
 			const key = queryKeys.decks.detail(deckId);
-			qc.setQueryData<any>(key, (prev) =>
+			qc.setQueryData<DeckWithSlides>(key, (prev) =>
 				prev ? { ...prev, slides: [...(prev.slides ?? []), slide] } : prev,
 			);
 		},

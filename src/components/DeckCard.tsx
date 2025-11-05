@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { DotsVerticalIcon, ImageIcon } from "@radix-ui/react-icons";
-import { Deck } from "../types/deck";
+import { Deck } from "../types/deckTypes";
 
 interface DeckCardProps {
 	deck: Deck;

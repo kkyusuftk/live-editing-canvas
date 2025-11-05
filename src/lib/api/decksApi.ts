@@ -1,5 +1,5 @@
 import { supabase } from "../supabase";
-import { Deck, DeckWithSlides, Slide } from "../../types/deck";
+import { Deck, DeckWithSlides, Slide } from "../../types/deckTypes";
 
 /**
  * Fetch all decks for the authenticated user

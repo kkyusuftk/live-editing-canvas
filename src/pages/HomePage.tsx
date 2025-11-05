@@ -9,12 +9,12 @@ import {
 	useUserDecks,
 	useCreateDeck,
 	useDeleteDeck,
-} from "../lib/queries/decks";
+} from "../lib/queries/decksQueries";
 import { Button, Modal } from "../components/ui";
 import { PlusIcon } from "@radix-ui/react-icons";
 import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "../lib/queryKeys";
-import { fetchDeckById } from "../lib/api/decks";
+import { fetchDeckById } from "../lib/api/decksApi";
 
 export function HomePage() {
 	const { user, signOut } = useAuthStore();

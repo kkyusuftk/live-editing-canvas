@@ -2,13 +2,13 @@ import { useEffect, useState, useRef, memo, useCallback } from "react";
 import type { CSSProperties, FormEventHandler } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
-import { updateSlideYDoc } from "../lib/api/decks";
+import { updateSlideYDoc } from "../lib/api/decksApi";
 import {
 	useDeck,
 	useUpdateDeckTitle,
 	useUpdateDeckVisibility,
 	useCreateSlide,
-} from "../lib/queries/decks";
+} from "../lib/queries/decksQueries";
 import { LoadingSpinner } from "../components/ui/LoadingSpinner";
 import { Button, Modal } from "../components/ui";
 import {
