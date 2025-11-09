@@ -1,4 +1,5 @@
 import { useOthers } from "@liveblocks/react";
+import type { Presence } from "../types/liveblocks";
 
 export function SlideCursors({ slideId }: { slideId: string }) {
 	const others = useOthers();
@@ -15,13 +16,18 @@ export function SlideCursors({ slideId }: { slideId: string }) {
 	return (
 		<>
 			{others
-				.map((o) => ({
-					id: o.connectionId,
-					cursor: (o.presence as any)?.cursor,
-					sId: (o.presence as any)?.slideId,
-					userName: (o.presence as any)?.user?.name || "Anonymous",
-				}))
-				.filter((o) => o.cursor && o.sId === slideId)
+				.map((o) => {
+					const presence = o.presence as Presence;
+					return {
+						id: o.connectionId,
+						cursor: presence?.cursor,
+						sId: presence?.slideId,
+						userName: presence?.user?.name || "Anonymous",
+					};
+				})
+				.filter(o =>
+					o.cursor !== null && o.sId === slideId
+				)
 				.map((o) => {
 					const color = colors[o.id % colors.length];
 					return (
@@ -29,8 +35,8 @@ export function SlideCursors({ slideId }: { slideId: string }) {
 							key={o.id}
 							className="pointer-events-none absolute"
 							style={{
-								left: `${o.cursor.xPercent}%`,
-								top: `${o.cursor.yPercent}%`,
+								left: `${o.cursor?.xPercent}%`,
+								top: `${o.cursor?.yPercent}%`,
 								transform: "translate(-50%, -50%)",
 							}}
 						>

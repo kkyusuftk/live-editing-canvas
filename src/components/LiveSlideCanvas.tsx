@@ -244,11 +244,10 @@ function LiveSlideCanvasInner({
 						onSelectElement("");
 					}
 				}}
-				className={`w-full max-w-5xl aspect-video bg-white dark:bg-gray-800 rounded-lg shadow ${
-					isActive
-						? "ring-2 ring-blue-500"
-						: "border border-gray-200 dark:border-gray-700"
-				} relative cursor-pointer`}
+				className={`w-full max-w-5xl aspect-video bg-white dark:bg-gray-800 rounded-lg shadow ${isActive
+					? "ring-2 ring-blue-500"
+					: "border border-gray-200 dark:border-gray-700"
+					} relative cursor-pointer`}
 			>
 				{isActive && containerRef.current && (
 					<PresenceMouseTracker
@@ -295,7 +294,7 @@ function LiveSlideCanvasInner({
 							const t = e.target as HTMLElement;
 							if (t && t.closest('[data-inline-toolbar="true"]')) return;
 							if (t && t.closest('[data-canvas-text="true"]')) {
-								if ((e as any).detail >= 2) return;
+								if (e.nativeEvent.detail >= 2) return;
 							}
 							if (editingElementId !== el.id) handleElementMouseDown(el, e);
 						}}
@@ -316,12 +315,11 @@ function LiveSlideCanvasInner({
 
 								<CanvasText
 									content={el.content}
-									className={`px-2 py-1 text-gray-900 dark:text-white bg-white/70 dark:bg-gray-900/50 rounded border ${
-										selectedElement?.elementId === el.id &&
+									className={`px-2 py-1 text-gray-900 dark:text-white bg-white/70 dark:bg-gray-900/50 rounded border ${selectedElement?.elementId === el.id &&
 										selectedElement?.slideId === slideId
-											? "border-blue-400 ring-2 ring-blue-200"
-											: "border-gray-200 dark:border-gray-700"
-									} outline-none focus:ring-2 focus:ring-blue-500`}
+										? "border-blue-400 ring-2 ring-blue-200"
+										: "border-gray-200 dark:border-gray-700"
+										} outline-none focus:ring-2 focus:ring-blue-500`}
 									style={{
 										fontWeight: el.isBold ? 700 : 400,
 										fontStyle: el.isItalic ? "italic" : "normal",

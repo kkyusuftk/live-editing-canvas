@@ -57,7 +57,7 @@ export function SlideEditorPage() {
 	const { user } = useAuthStore();
 	const isOwner = !!(deck && user && user.id === deck.owner_id);
 	const deckVisibility: "private" | "users" =
-		(deck as any)?.visibility ?? "private";
+		deck?.visibility ?? "private";
 
 	const handleConfirmShare = async () => {
 		if (!deck) return;

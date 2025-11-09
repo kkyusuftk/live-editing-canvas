@@ -1,5 +1,16 @@
 import { LiveMap, LiveObject } from "@liveblocks/client";
-import type { TextElement, Storage } from "../types/liveblocks";
+import type { Storage, TextElement } from "../types/liveblocks";
+
+/**
+ * Immutable storage type returned by useStorage hook
+ */
+type ImmutableStorage = {
+	readonly elements: ReadonlyMap<string, Readonly<TextElement>>;
+	readonly metadata: Readonly<{
+		lastModified: number;
+		version: number;
+	}>;
+};
 
 /**
  * Create initial storage for a new slide room
@@ -16,22 +27,23 @@ export function createInitialStorage(): Storage {
 
 /**
  * Serialize storage to JSON for Supabase persistence
+ * Accepts both mutable Storage (LiveMap/LiveObject) and immutable storage from useStorage
  */
-export function serializeStorage(storage: Storage | any): string {
+export function serializeStorage(storage: Storage | ImmutableStorage): string {
 	const elementsArray: TextElement[] = [];
 
-	storage.elements.forEach((liveElement: any) => {
+	storage.elements.forEach((element) => {
 		// Handle both LiveObject instances and plain objects from useStorage
-		const element =
-			typeof liveElement.toObject === "function"
-				? liveElement.toObject()
-				: liveElement;
-		elementsArray.push(element);
+		const plainElement =
+			element instanceof LiveObject
+				? element.toObject()
+				: element;
+		elementsArray.push(plainElement);
 	});
 
 	// Handle both LiveObject instances and plain objects from useStorage
 	const metadata =
-		typeof storage.metadata.toObject === "function"
+		storage.metadata instanceof LiveObject
 			? storage.metadata.toObject()
 			: storage.metadata;
 
