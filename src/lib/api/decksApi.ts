@@ -213,6 +213,7 @@ export async function deleteDeck(
 
 /**
  * Update a slide's Yjs document snapshot (bytea)
+ * @deprecated Use updateSlideStorage instead
  */
 export async function updateSlideYDoc(
 	slideId: string,
@@ -239,6 +240,72 @@ export async function updateSlideYDoc(
 	} catch (err) {
 		console.error("Unexpected error updating slide y_doc:", err);
 		return { error: err as Error };
+	}
+}
+
+/**
+ * Update a slide's Liveblocks storage snapshot (JSON string)
+ */
+export async function updateSlideStorage(
+	slideId: string,
+	storageJson: string,
+): Promise<{ error: Error | null }> {
+	try {
+		const { error } = await supabase
+			.from("slides")
+			.update({ y_doc: storageJson })
+			.eq("id", slideId);
+
+		if (error) {
+			console.error("Error updating slide storage:", error);
+			return { error: new Error(error.message) };
+		}
+
+		return { error: null };
+	} catch (err) {
+		console.error("Unexpected error updating slide storage:", err);
+		return { error: err as Error };
+	}
+}
+
+/**
+ * Fetch a slide's storage data for seeding Liveblocks room
+ */
+export async function fetchSlideStorage(
+	slideId: string,
+): Promise<{ data: string | null; error: Error | null }> {
+	try {
+		const { data, error } = await supabase
+			.from("slides")
+			.select("y_doc")
+			.eq("id", slideId)
+			.single();
+
+		if (error) {
+			console.error("Error fetching slide storage:", error);
+			return { data: null, error: new Error(error.message) };
+		}
+
+		// y_doc might be null (empty slide) or a JSON string
+		const storageData = data?.y_doc;
+		
+		if (!storageData || storageData === null) {
+			return { data: null, error: null };
+		}
+
+		// If it's a string, return as-is
+		if (typeof storageData === "string") {
+			// Check if it starts with \x (old Yjs format) - treat as empty
+			if (storageData.startsWith("\\x")) {
+				return { data: null, error: null };
+			}
+			return { data: storageData, error: null };
+		}
+
+		return { data: null, error: null };
+	} catch (err) {
+		console.error("Unexpected error fetching slide storage:", err);
+		return { data: null, error: err as Error };
 	}
 }
 

@@ -13,7 +13,7 @@ export interface Slide {
 	id: string; // UUID
 	deck_id: string; // References decks(id)
 	position: number; // Order in deck
-	y_doc: Uint8Array | null; // Yjs binary snapshot (Phase 3+)
+	y_doc: string | null; // Liveblocks storage JSON (stored in y_doc column for backward compatibility)
 	created_at: string; // ISO timestamp
 	updated_at: string; // ISO timestamp
 }
