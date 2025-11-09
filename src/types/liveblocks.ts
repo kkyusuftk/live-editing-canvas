@@ -1,4 +1,4 @@
-import { LiveList, LiveMap, LiveObject } from "@liveblocks/client";
+import { LiveMap, LiveObject } from "@liveblocks/client";
 
 /**
  * Text element on a slide canvas
