@@ -1,6 +1,6 @@
-import { useEffect } from "react";
-import type React from "react";
 import { useMyPresence } from "@liveblocks/react";
+import type React from "react";
+import { useEffect } from "react";
 
 export function PresenceMouseTracker({
 	activeSlideId,
@@ -50,5 +50,3 @@ export function PresenceMouseTracker({
 
 	return null;
 }
-
-

@@ -1,5 +1,5 @@
-import { memo, useCallback } from "react";
 import type { CSSProperties, FormEventHandler } from "react";
+import { memo, useCallback } from "react";
 
 type CanvasTextProps = {
 	content: string;
@@ -13,19 +13,19 @@ type CanvasTextProps = {
 };
 
 export type TextElement = {
-  id: string;
-  type: "text";
-  content: string;
-  xPercent: number;
-  yPercent: number;
-  fontSize?: number;
-  isBold?: boolean;
-  isItalic?: boolean;
+	id: string;
+	type: "text";
+	content: string;
+	xPercent: number;
+	yPercent: number;
+	fontSize?: number;
+	isBold?: boolean;
+	isItalic?: boolean;
 };
 
 export type CanvasSlide = {
-  id: string;
-  elements: TextElement[];
+	id: string;
+	elements: TextElement[];
 };
 
 const shallowEqual = (
@@ -84,10 +84,11 @@ export const CanvasText = memo(
 		return (
 			prev.content === next.content &&
 			prev.className === next.className &&
-			shallowEqual(prev.style as Record<string, unknown>, next.style as Record<string, unknown>) &&
+			shallowEqual(
+				prev.style as Record<string, unknown>,
+				next.style as Record<string, unknown>,
+			) &&
 			prev.isEditing === next.isEditing
 		);
 	},
 );
-
-

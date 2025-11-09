@@ -1,8 +1,8 @@
 import { Suspense } from "react";
 import { Route, Routes } from "react-router-dom";
-import { appRoutes } from "./routeConfig";
 import { RequireAuth } from "../components/RequireAuth";
 import { LoadingSpinner } from "../components/ui/LoadingSpinner";
+import { appRoutes } from "./routeConfig";
 
 const AppRoutes = () => {
 	return (

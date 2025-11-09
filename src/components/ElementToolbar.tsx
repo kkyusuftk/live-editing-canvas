@@ -1,6 +1,12 @@
-import { Button } from "./ui";
-import { Cross1Icon, FontItalicIcon, FontBoldIcon, MinusIcon, PlusIcon } from "@radix-ui/react-icons";
+import {
+	Cross1Icon,
+	FontBoldIcon,
+	FontItalicIcon,
+	MinusIcon,
+	PlusIcon,
+} from "@radix-ui/react-icons";
 import type { TextElement } from "../types/liveblocks";
+import { Button } from "./ui";
 
 interface ElementToolbarProps {
 	element: TextElement;
@@ -88,4 +94,3 @@ export function ElementToolbar({
 		</div>
 	);
 }
-

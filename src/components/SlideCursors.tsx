@@ -55,7 +55,3 @@ export function SlideCursors({ slideId }: { slideId: string }) {
 		</>
 	);
 }
-
-
-
-

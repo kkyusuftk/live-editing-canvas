@@ -1,5 +1,5 @@
-import { lazy } from "react";
 import type { ReactElement } from "react";
+import { lazy } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuthStore } from "../store/auth";
 

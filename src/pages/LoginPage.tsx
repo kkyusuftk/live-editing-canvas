@@ -1,8 +1,8 @@
-import { useState, FormEvent } from "react";
-import { Link, useNavigate, useLocation, Navigate } from "react-router-dom";
+import { FormEvent, useState } from "react";
 import { toast } from "react-hot-toast";
+import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
+import { Alert, Button, Input } from "../components/ui";
 import { useAuthStore } from "../store/auth";
-import { Button, Alert, Input } from "../components/ui";
 
 export function LoginPage() {
 	const [email, setEmail] = useState("");

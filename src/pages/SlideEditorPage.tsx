@@ -1,23 +1,23 @@
-import { useEffect, useState, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { toast } from "react-hot-toast";
 import {
+	ArrowLeftIcon,
+	CheckIcon,
+	Cross1Icon,
+	Pencil1Icon,
+} from "@radix-ui/react-icons";
+import { useEffect, useRef, useState } from "react";
+import { toast } from "react-hot-toast";
+import { useNavigate, useParams } from "react-router-dom";
+import { FloatingToolbar } from "../components/FloatingToolbar";
+import { LiveSlideCanvas } from "../components/LiveSlideCanvas";
+import { Button, Modal } from "../components/ui";
+import { LoadingSpinner } from "../components/ui/LoadingSpinner";
+import {
+	useCreateSlide,
 	useDeck,
 	useUpdateDeckTitle,
 	useUpdateDeckVisibility,
-	useCreateSlide,
 } from "../lib/queries/decksQueries";
-import { LoadingSpinner } from "../components/ui/LoadingSpinner";
-import { Button, Modal } from "../components/ui";
 import { useAuthStore } from "../store/auth";
-import { LiveSlideCanvas } from "../components/LiveSlideCanvas";
-import { FloatingToolbar } from "../components/FloatingToolbar";
-import {
-	Pencil1Icon,
-	CheckIcon,
-	Cross1Icon,
-	ArrowLeftIcon,
-} from "@radix-ui/react-icons";
 
 export function SlideEditorPage() {
 	const { slideId } = useParams<{ slideId: string }>();

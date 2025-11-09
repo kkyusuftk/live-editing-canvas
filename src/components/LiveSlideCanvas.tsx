@@ -1,23 +1,29 @@
-import { useEffect, useRef, useState } from "react";
+import { LiveObject } from "@liveblocks/client";
 import {
-	RoomProvider,
 	ClientSideSuspense,
-	useStorage,
+	RoomProvider,
 	useMutation,
 	useRoom,
+	useStorage,
 	useUpdateMyPresence,
 } from "@liveblocks/react/suspense";
-import { LiveObject } from "@liveblocks/client";
-import { CanvasText } from "./CanvasText";
-import { SlideCursors } from "./SlideCursors";
-import { PresenceMouseTracker } from "./PresenceMouseTracker";
-import { ElementToolbar } from "./ElementToolbar";
-import { getSlideRoomId, createInitialStorage, deserializeStorage, getUserDisplayName, generateUserColor } from "../lib/liveblocks";
-import type { TextElement } from "../types/liveblocks";
-import { LoadingSpinner } from "./ui/LoadingSpinner";
+import { useEffect, useRef, useState } from "react";
 import { useSlideStoragePersistence } from "../hooks/useSlideStoragePersistence";
 import { fetchSlideStorage } from "../lib/api/decksApi";
+import {
+	createInitialStorage,
+	deserializeStorage,
+	generateUserColor,
+	getSlideRoomId,
+	getUserDisplayName,
+} from "../lib/liveblocks";
 import { useAuthStore } from "../store/auth";
+import type { TextElement } from "../types/liveblocks";
+import { CanvasText } from "./CanvasText";
+import { ElementToolbar } from "./ElementToolbar";
+import { PresenceMouseTracker } from "./PresenceMouseTracker";
+import { SlideCursors } from "./SlideCursors";
+import { LoadingSpinner } from "./ui/LoadingSpinner";
 
 interface LiveSlideCanvasProps {
 	slideId: string;
@@ -60,7 +66,7 @@ function LiveSlideCanvasInner({
 			console.log("user", user);
 			const userName = getUserDisplayName(user);
 			const userColor = generateUserColor();
-			
+
 			updateMyPresence({
 				user: {
 					name: userName,
@@ -79,14 +85,14 @@ function LiveSlideCanvasInner({
 
 		(async () => {
 			const { data: storageJson } = await fetchSlideStorage(slideId);
-			
+
 			if (storageJson) {
 				const { elements: elementsMap } = deserializeStorage(storageJson);
-				
+
 				// Populate Liveblocks storage with initial data
 				const storage = await room.getStorage();
 				const elementsLiveMap = storage.root.get("elements");
-				
+
 				if (elementsLiveMap && elementsLiveMap.size === 0) {
 					// Only seed if storage is empty
 					elementsMap.forEach((element, id) => {
@@ -94,7 +100,7 @@ function LiveSlideCanvasInner({
 					});
 				}
 			}
-			
+
 			setIsSeeded(true);
 		})();
 	}, [slideId, room, isSeeded]);
@@ -142,7 +148,7 @@ function LiveSlideCanvasInner({
 			isBold: false,
 			isItalic: false,
 		};
-    console.log("newElement", newElement);
+		console.log("newElement", newElement);
 		addElement(newElement);
 		onSelectElement(newElement.id);
 		onStartEditing(newElement.id);
@@ -244,94 +250,101 @@ function LiveSlideCanvasInner({
 						: "border border-gray-200 dark:border-gray-700"
 				} relative cursor-pointer`}
 			>
-				{isActive && containerRef.current && <PresenceMouseTracker activeSlideId={slideId} slideContainerRefs={{ current: { [slideId]: containerRef.current } }} />}
-			
-			{/* Render elements */}
-			{elements.map((el) => (
-				<div
-					key={el.id}
-					className="absolute group cursor-move"
-					style={{
-						left: `${el.xPercent}%`,
-						top: `${el.yPercent}%`,
-						transform: "translate(-50%, -50%)",
-					}}
-					onDragStart={(ev) => ev.preventDefault()}
-					onClick={(e) => {
-						e.stopPropagation();
-						onSelectElement(el.id);
-					}}
-					onDoubleClick={(e) => {
-						e.stopPropagation();
-						onStartEditing(el.id);
-						onSelectElement(el.id);
-						const node = (e.currentTarget as HTMLElement).querySelector(
-							`[data-canvas-text="true"][data-element-id="${el.id}"]`,
-						) as HTMLElement | null;
-						if (node) {
-							node.focus();
-							const sel = window.getSelection();
-							const range = document.createRange();
-							range.selectNodeContents(node);
-							range.collapse(false);
-							sel?.removeAllRanges();
-							sel?.addRange(range);
-						}
-					}}
-					onMouseDownCapture={(e) => {
-						const t = e.target as HTMLElement;
-						if (t && t.closest('[data-inline-toolbar="true"]')) return;
-						if (t && t.closest('[data-canvas-text="true"]')) {
-							if ((e as any).detail >= 2) return;
-						}
-						if (editingElementId !== el.id) handleElementMouseDown(el, e);
-					}}
-				>
-					{el.type === "text" && (
-						<>
-							{selectedElement?.elementId === el.id &&
-								selectedElement?.slideId === slideId && (
-									<ElementToolbar
-										element={el}
-										onUpdateElement={updateElement}
-										onDeleteElement={(elementId) => {
-											deleteElement(elementId);
-											onSelectElement("");
-										}}
-									/>
-								)}
+				{isActive && containerRef.current && (
+					<PresenceMouseTracker
+						activeSlideId={slideId}
+						slideContainerRefs={{
+							current: { [slideId]: containerRef.current },
+						}}
+					/>
+				)}
 
-							<CanvasText
-								content={el.content}
-								className={`px-2 py-1 text-gray-900 dark:text-white bg-white/70 dark:bg-gray-900/50 rounded border ${
-									selectedElement?.elementId === el.id &&
-									selectedElement?.slideId === slideId
-										? "border-blue-400 ring-2 ring-blue-200"
-										: "border-gray-200 dark:border-gray-700"
-								} outline-none focus:ring-2 focus:ring-blue-500`}
-								style={{
-									fontWeight: el.isBold ? 700 : 400,
-									fontStyle: el.isItalic ? "italic" : "normal",
-									fontSize: `${el.fontSize ?? 20}px`,
-								}}
-								isEditing={editingElementId === el.id}
-								elementId={el.id}
-								onInputText={(text) => {
-									updateElement(el.id, { content: text });
-								}}
-								onFocus={() => {
-									onStartEditing(el.id);
-									onSelectElement(el.id);
-								}}
-								onBlur={onStopEditing}
-							/>
-						</>
-					)}
-				</div>
-			))}
+				{/* Render elements */}
+				{elements.map((el) => (
+					<div
+						key={el.id}
+						className="absolute group cursor-move"
+						style={{
+							left: `${el.xPercent}%`,
+							top: `${el.yPercent}%`,
+							transform: "translate(-50%, -50%)",
+						}}
+						onDragStart={(ev) => ev.preventDefault()}
+						onClick={(e) => {
+							e.stopPropagation();
+							onSelectElement(el.id);
+						}}
+						onDoubleClick={(e) => {
+							e.stopPropagation();
+							onStartEditing(el.id);
+							onSelectElement(el.id);
+							const node = (e.currentTarget as HTMLElement).querySelector(
+								`[data-canvas-text="true"][data-element-id="${el.id}"]`,
+							) as HTMLElement | null;
+							if (node) {
+								node.focus();
+								const sel = window.getSelection();
+								const range = document.createRange();
+								range.selectNodeContents(node);
+								range.collapse(false);
+								sel?.removeAllRanges();
+								sel?.addRange(range);
+							}
+						}}
+						onMouseDownCapture={(e) => {
+							const t = e.target as HTMLElement;
+							if (t && t.closest('[data-inline-toolbar="true"]')) return;
+							if (t && t.closest('[data-canvas-text="true"]')) {
+								if ((e as any).detail >= 2) return;
+							}
+							if (editingElementId !== el.id) handleElementMouseDown(el, e);
+						}}
+					>
+						{el.type === "text" && (
+							<>
+								{selectedElement?.elementId === el.id &&
+									selectedElement?.slideId === slideId && (
+										<ElementToolbar
+											element={el}
+											onUpdateElement={updateElement}
+											onDeleteElement={(elementId) => {
+												deleteElement(elementId);
+												onSelectElement("");
+											}}
+										/>
+									)}
 
-			{/* Others' cursors for this slide */}
-			{isActive && <SlideCursors slideId={slideId} />}
+								<CanvasText
+									content={el.content}
+									className={`px-2 py-1 text-gray-900 dark:text-white bg-white/70 dark:bg-gray-900/50 rounded border ${
+										selectedElement?.elementId === el.id &&
+										selectedElement?.slideId === slideId
+											? "border-blue-400 ring-2 ring-blue-200"
+											: "border-gray-200 dark:border-gray-700"
+									} outline-none focus:ring-2 focus:ring-blue-500`}
+									style={{
+										fontWeight: el.isBold ? 700 : 400,
+										fontStyle: el.isItalic ? "italic" : "normal",
+										fontSize: `${el.fontSize ?? 20}px`,
+									}}
+									isEditing={editingElementId === el.id}
+									elementId={el.id}
+									onInputText={(text) => {
+										updateElement(el.id, { content: text });
+									}}
+									onFocus={() => {
+										onStartEditing(el.id);
+										onSelectElement(el.id);
+									}}
+									onBlur={onStopEditing}
+								/>
+							</>
+						)}
+					</div>
+				))}
+
+				{/* Others' cursors for this slide */}
+				{isActive && <SlideCursors slideId={slideId} />}
 			</div>
 		</>
 	);
@@ -363,4 +376,3 @@ export function LiveSlideCanvas(props: LiveSlideCanvasProps) {
 		</RoomProvider>
 	);
 }
-

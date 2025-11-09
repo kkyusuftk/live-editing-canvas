@@ -1,7 +1,7 @@
-import { useEffect, useRef } from "react";
 import { useStorage } from "@liveblocks/react/suspense";
-import { serializeStorage } from "../lib/liveblocks";
+import { useEffect, useRef } from "react";
 import { updateSlideStorage } from "../lib/api/decksApi";
+import { serializeStorage } from "../lib/liveblocks";
 
 /**
  * Hook to automatically persist Liveblocks storage to Supabase
@@ -26,7 +26,7 @@ export function useSlideStoragePersistence(slideId: string) {
 			saveTimerRef.current = window.setTimeout(async () => {
 				try {
 					const serialized = serializeStorage(storage);
-					
+
 					// Only save if content actually changed
 					if (serialized === lastSavedRef.current) {
 						return;
@@ -54,7 +54,7 @@ export function useSlideStoragePersistence(slideId: string) {
 	useEffect(() => {
 		return () => {
 			if (!storage) return;
-			
+
 			// Flush final save on unmount
 			(async () => {
 				try {
@@ -69,4 +69,3 @@ export function useSlideStoragePersistence(slideId: string) {
 		};
 	}, [storage, slideId]);
 }
-

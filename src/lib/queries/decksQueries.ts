@@ -48,10 +48,10 @@ export function useCreateDeck() {
 			return data!;
 		},
 		onSuccess: (newDeck) => {
-			qc.setQueryData(queryKeys.decks.list(), (prev: DeckWithSlides[] | undefined) => [
-				newDeck,
-				...(prev ?? []),
-			]);
+			qc.setQueryData(
+				queryKeys.decks.list(),
+				(prev: DeckWithSlides[] | undefined) => [newDeck, ...(prev ?? [])],
+			);
 		},
 	});
 }
@@ -93,8 +93,10 @@ export function useUpdateDeckTitle() {
 			return data;
 		},
 		onSuccess: (updated) => {
-			qc.setQueryData(queryKeys.decks.detail(updated.id), (prev: DeckWithSlides | undefined) =>
-				prev ? { ...prev, ...updated } : updated,
+			qc.setQueryData(
+				queryKeys.decks.detail(updated.id),
+				(prev: DeckWithSlides | undefined) =>
+					prev ? { ...prev, ...updated } : updated,
 			);
 			qc.setQueryData<Deck[]>(queryKeys.decks.list(), (prev) =>
 				(prev ?? []).map((d) =>
@@ -120,8 +122,10 @@ export function useUpdateDeckVisibility() {
 			return data;
 		},
 		onSuccess: (updated) => {
-			qc.setQueryData(queryKeys.decks.detail(updated.id), (prev: DeckWithSlides | undefined) =>
-				prev ? { ...prev, ...updated } : updated,
+			qc.setQueryData(
+				queryKeys.decks.detail(updated.id),
+				(prev: DeckWithSlides | undefined) =>
+					prev ? { ...prev, ...updated } : updated,
 			);
 			qc.setQueryData<Deck[]>(queryKeys.decks.list(), (prev) =>
 				(prev ?? []).map((d) =>

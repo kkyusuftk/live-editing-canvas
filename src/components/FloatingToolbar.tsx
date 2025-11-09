@@ -1,5 +1,5 @@
-import { Button } from "./ui";
 import { PlusIcon } from "@radix-ui/react-icons";
+import { Button } from "./ui";
 
 interface FloatingToolbarProps {
 	onAddText: () => void;
@@ -30,11 +30,7 @@ export function FloatingToolbar({
 				</Button>
 
 				{/* Add Slide */}
-				<Button
-					onClick={onAddSlide}
-					size="sm"
-					className="rounded-full"
-				>
+				<Button onClick={onAddSlide} size="sm" className="rounded-full">
 					<span className="flex items-center">
 						<PlusIcon className="mr-1.5" />
 						Add slide
@@ -44,4 +40,3 @@ export function FloatingToolbar({
 		</div>
 	);
 }
-

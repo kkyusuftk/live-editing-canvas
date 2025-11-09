@@ -288,7 +288,7 @@ export async function fetchSlideStorage(
 
 		// y_doc might be null (empty slide) or a JSON string
 		const storageData = data?.y_doc;
-		
+
 		if (!storageData || storageData === null) {
 			return { data: null, error: null };
 		}

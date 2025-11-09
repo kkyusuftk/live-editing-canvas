@@ -1,7 +1,11 @@
-import { useOthers, useSelf, useUpdateMyPresence } from "@liveblocks/react/suspense";
-import { getUserDisplayName, generateUserColor } from "../lib/liveblocks";
-import { useAuthStore } from "../store/auth";
+import {
+	useOthers,
+	useSelf,
+	useUpdateMyPresence,
+} from "@liveblocks/react/suspense";
 import { useEffect } from "react";
+import { generateUserColor, getUserDisplayName } from "../lib/liveblocks";
+import { useAuthStore } from "../store/auth";
 
 export function ParticipantsPanel() {
 	const others = useOthers();
@@ -14,7 +18,7 @@ export function ParticipantsPanel() {
 		if (user) {
 			const userName = getUserDisplayName(user);
 			const userColor = generateUserColor();
-			
+
 			updateMyPresence({
 				user: {
 					name: userName,
@@ -25,12 +29,16 @@ export function ParticipantsPanel() {
 	}, [user, updateMyPresence]);
 
 	const allParticipants = [
-		...(self ? [{
-			id: self.connectionId,
-			name: self.presence.user?.name || "You",
-			color: self.presence.user?.color || "#3b82f6",
-			isYou: true,
-		}] : []),
+		...(self
+			? [
+					{
+						id: self.connectionId,
+						name: self.presence.user?.name || "You",
+						color: self.presence.user?.color || "#3b82f6",
+						isYou: true,
+					},
+				]
+			: []),
 		...others.map((other) => ({
 			id: other.connectionId,
 			name: other.presence.user?.name || "Anonymous",
@@ -65,4 +73,3 @@ export function ParticipantsPanel() {
 		</div>
 	);
 }
-

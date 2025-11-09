@@ -1,5 +1,5 @@
+import { AuthError, Session, User } from "@supabase/supabase-js";
 import { create } from "zustand";
-import { Session, User, AuthError } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabase";
 
 interface AuthState {

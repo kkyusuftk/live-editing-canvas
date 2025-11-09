@@ -93,4 +93,3 @@ declare global {
 		ThreadMetadata: ThreadMetadata;
 	}
 }
-

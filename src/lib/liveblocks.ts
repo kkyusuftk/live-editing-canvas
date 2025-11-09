@@ -19,19 +19,21 @@ export function createInitialStorage(): Storage {
  */
 export function serializeStorage(storage: Storage | any): string {
 	const elementsArray: TextElement[] = [];
-	
+
 	storage.elements.forEach((liveElement: any) => {
 		// Handle both LiveObject instances and plain objects from useStorage
-		const element = typeof liveElement.toObject === 'function' 
-			? liveElement.toObject() 
-			: liveElement;
+		const element =
+			typeof liveElement.toObject === "function"
+				? liveElement.toObject()
+				: liveElement;
 		elementsArray.push(element);
 	});
 
 	// Handle both LiveObject instances and plain objects from useStorage
-	const metadata = typeof storage.metadata.toObject === 'function'
-		? storage.metadata.toObject()
-		: storage.metadata;
+	const metadata =
+		typeof storage.metadata.toObject === "function"
+			? storage.metadata.toObject()
+			: storage.metadata;
 
 	return JSON.stringify({
 		elements: elementsArray,
@@ -102,7 +104,9 @@ export function generateUserColor(): string {
 /**
  * Get user display name from auth store or generate anonymous name
  */
-export function getUserDisplayName(user: { email?: string, user_metadata: { username?: string } } | null): string {
+export function getUserDisplayName(
+	user: { email?: string; user_metadata: { username?: string } } | null,
+): string {
 	if (user?.user_metadata.username) {
 		return user.user_metadata.username;
 	}
@@ -111,4 +115,3 @@ export function getUserDisplayName(user: { email?: string, user_metadata: { user
 	}
 	return user.email;
 }
-
