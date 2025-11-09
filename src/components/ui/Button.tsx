@@ -3,6 +3,7 @@ import { ButtonHTMLAttributes, forwardRef } from "react";
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 	variant?: "primary" | "secondary" | "danger";
 	size?: "sm" | "md" | "lg";
+	onlyIcon?: boolean;
 	fullWidth?: boolean;
 }
 
@@ -13,6 +14,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
 			variant = "primary",
 			size = "md",
 			fullWidth = false,
+			onlyIcon = false,
 			disabled,
 			className = "",
 			...props
@@ -31,23 +33,23 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
 				"border border-transparent text-white bg-red-600 hover:bg-red-700 focus:ring-red-500",
 		};
 
-		const sizeClasses = {
-			sm: "px-4 py-2 text-xs",
-			md: "px-4 py-2 text-sm",
-			lg: "px-4 py-2 text-base",
-		};
+	const sizeClasses = {
+		sm: onlyIcon ? "p-2 text-xs" : "px-4 py-2 text-xs",
+		md: onlyIcon ? "p-2 text-sm" : "px-4 py-2 text-sm",
+		lg: onlyIcon ? "p-2 text-base" : "px-4 py-2 text-base",
+	};
 
-		const widthClass = fullWidth ? "w-full" : "";
+	const widthClass = fullWidth ? "w-full" : "";
 
-		return (
-			<button
-				ref={ref}
-				disabled={disabled}
-				className={`${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${widthClass} ${className}`}
-				{...props}
-			>
-				{children}
-			</button>
-		);
+	return (
+		<button
+			ref={ref}
+			disabled={disabled}
+			className={`${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${widthClass} ${className}`}
+			{...props}
+		>
+			{children}
+		</button>
+	);
 	},
 );

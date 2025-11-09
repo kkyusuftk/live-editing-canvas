@@ -102,10 +102,13 @@ export function generateUserColor(): string {
 /**
  * Get user display name from auth store or generate anonymous name
  */
-export function getUserDisplayName(user: { email?: string } | null): string {
+export function getUserDisplayName(user: { email?: string, user_metadata: { username?: string } } | null): string {
+	if (user?.user_metadata.username) {
+		return user.user_metadata.username;
+	}
 	if (!user?.email) {
 		return `Anonymous ${Math.floor(Math.random() * 1000)}`;
 	}
-	return user.email.split("@")[0];
+	return user.email;
 }
 

@@ -11,6 +11,7 @@ import { LoadingSpinner } from "../components/ui/LoadingSpinner";
 import { Button, Modal } from "../components/ui";
 import { useAuthStore } from "../store/auth";
 import { LiveSlideCanvas } from "../components/LiveSlideCanvas";
+import { FloatingToolbar } from "../components/FloatingToolbar";
 import {
 	Pencil1Icon,
 	CheckIcon,
@@ -434,59 +435,11 @@ export function SlideEditorPage() {
 			</div>
 
 			{/* Bottom floating toolbar */}
-			<div className="pointer-events-none fixed inset-x-0 bottom-6 flex justify-center">
-				<div className="pointer-events-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg rounded-full px-3 py-2 flex items-center space-x-2">
-					{/* Add Text */}
-					<Button
-						onClick={handleAddText}
-						size="sm"
-						variant="secondary"
-						className="rounded-full"
-						disabled={!activeSlideId}
-					>
-						<span className="flex items-center">
-							<svg
-								className="w-4 h-4 mr-1.5"
-								fill="none"
-								stroke="currentColor"
-								viewBox="0 0 24 24"
-							>
-								<path
-									strokeLinecap="round"
-									strokeLinejoin="round"
-									strokeWidth={2}
-									d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-								/>
-							</svg>
-							Add text
-						</span>
-					</Button>
-
-					{/* Add Slide */}
-					<Button
-						onClick={handleAddSlide}
-						size="sm"
-						className="rounded-full"
-					>
-						<span className="flex items-center">
-							<svg
-								className="w-4 h-4 mr-1.5"
-								fill="none"
-								stroke="currentColor"
-								viewBox="0 0 24 24"
-							>
-								<path
-									strokeLinecap="round"
-									strokeLinejoin="round"
-									strokeWidth={2}
-									d="M12 4v16m8-8H4"
-								/>
-							</svg>
-							Add slide
-						</span>
-					</Button>
-				</div>
-			</div>
+			<FloatingToolbar
+				onAddText={handleAddText}
+				onAddSlide={handleAddSlide}
+				isAddTextDisabled={!activeSlideId}
+			/>
 		</div>
 	);
 }

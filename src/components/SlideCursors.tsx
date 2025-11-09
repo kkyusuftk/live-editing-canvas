@@ -19,6 +19,7 @@ export function SlideCursors({ slideId }: { slideId: string }) {
 					id: o.connectionId,
 					cursor: (o.presence as any)?.cursor,
 					sId: (o.presence as any)?.slideId,
+					userName: (o.presence as any)?.user?.name || "Anonymous",
 				}))
 				.filter((o) => o.cursor && o.sId === slideId)
 				.map((o) => {
@@ -33,7 +34,7 @@ export function SlideCursors({ slideId }: { slideId: string }) {
 								transform: "translate(-50%, -50%)",
 							}}
 						>
-							<div className="flex items-center">
+							<div className="flex flex-col items-start">
 								<svg
 									className="w-4 h-4 drop-shadow"
 									viewBox="0 0 24 24"
@@ -41,6 +42,12 @@ export function SlideCursors({ slideId }: { slideId: string }) {
 								>
 									<path d="M3 2l7 18 2-7 7-2L3 2z" />
 								</svg>
+								<div
+									className="mt-1 px-2 py-1 rounded text-xs font-medium text-white shadow-lg"
+									style={{ backgroundColor: color }}
+								>
+									{o.userName}
+								</div>
 							</div>
 						</div>
 					);

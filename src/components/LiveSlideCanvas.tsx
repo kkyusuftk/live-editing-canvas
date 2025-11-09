@@ -5,18 +5,19 @@ import {
 	useStorage,
 	useMutation,
 	useRoom,
+	useUpdateMyPresence,
 } from "@liveblocks/react/suspense";
 import { LiveObject } from "@liveblocks/client";
 import { CanvasText } from "./CanvasText";
 import { SlideCursors } from "./SlideCursors";
 import { PresenceMouseTracker } from "./PresenceMouseTracker";
-import { ParticipantsPanel } from "./ParticipantsPanel";
 import { ElementToolbar } from "./ElementToolbar";
-import { getSlideRoomId, createInitialStorage, deserializeStorage } from "../lib/liveblocks";
+import { getSlideRoomId, createInitialStorage, deserializeStorage, getUserDisplayName, generateUserColor } from "../lib/liveblocks";
 import type { TextElement } from "../types/liveblocks";
 import { LoadingSpinner } from "./ui/LoadingSpinner";
 import { useSlideStoragePersistence } from "../hooks/useSlideStoragePersistence";
 import { fetchSlideStorage } from "../lib/api/decksApi";
+import { useAuthStore } from "../store/auth";
 
 interface LiveSlideCanvasProps {
 	slideId: string;
@@ -50,6 +51,24 @@ function LiveSlideCanvasInner({
 	const room = useRoom();
 	const [isSeeded, setIsSeeded] = useState(false);
 	const lastAddTextTriggerRef = useRef(0);
+	const updateMyPresence = useUpdateMyPresence();
+	const { user } = useAuthStore();
+
+	// Set user info in presence when component mounts
+	useEffect(() => {
+		if (user) {
+			console.log("user", user);
+			const userName = getUserDisplayName(user);
+			const userColor = generateUserColor();
+			
+			updateMyPresence({
+				user: {
+					name: userName,
+					color: userColor,
+				},
+			});
+		}
+	}, [user, updateMyPresence]);
 
 	// Enable automatic persistence to Supabase
 	useSlideStoragePersistence(slideId);
@@ -210,10 +229,15 @@ function LiveSlideCanvasInner({
 
 	return (
 		<>
-			{isActive && <ParticipantsPanel />}
 			<div
 				ref={containerRef}
-				onClick={onActivate}
+				onClick={(e) => {
+					onActivate();
+					// Clear selection if clicking on empty canvas area
+					if (e.target === e.currentTarget) {
+						onSelectElement("");
+					}
+				}}
 				className={`w-full max-w-5xl aspect-video bg-white dark:bg-gray-800 rounded-lg shadow ${
 					isActive
 						? "ring-2 ring-blue-500"

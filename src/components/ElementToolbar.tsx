@@ -15,14 +15,15 @@ export function ElementToolbar({
 }: ElementToolbarProps) {
 	return (
 		<div
-			className="absolute -top-14 left-1/2 -translate-x-1/2 z-10"
+			className="absolute -top-14 left-1/2 z-10 -translate-x-1/2 animate-slide-down-fade"
 			data-inline-toolbar="true"
 			onMouseDown={(e) => e.stopPropagation()}
 		>
-			<div className="flex items-center space-x-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow rounded-md px-2 py-1">
+			<div className="flex items-center space-x-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg rounded-md px-2 py-1">
 				<Button
 					variant={element.isBold ? "primary" : "secondary"}
 					size="sm"
+					onlyIcon={true}
 					onClick={() => {
 						onUpdateElement(element.id, { isBold: !element.isBold });
 					}}
@@ -32,6 +33,7 @@ export function ElementToolbar({
 				<Button
 					variant={element.isItalic ? "primary" : "secondary"}
 					size="sm"
+					onlyIcon={true}
 					onClick={() => {
 						onUpdateElement(element.id, { isItalic: !element.isItalic });
 					}}
@@ -43,6 +45,7 @@ export function ElementToolbar({
 					<Button
 						variant="secondary"
 						size="sm"
+						onlyIcon={true}
 						onClick={() => {
 							onUpdateElement(element.id, {
 								fontSize: Math.max(8, (element.fontSize ?? 20) - 2),
@@ -58,6 +61,7 @@ export function ElementToolbar({
 					<Button
 						variant="secondary"
 						size="sm"
+						onlyIcon={true}
 						onClick={() => {
 							onUpdateElement(element.id, {
 								fontSize: Math.min(120, (element.fontSize ?? 20) + 2),
@@ -72,6 +76,7 @@ export function ElementToolbar({
 				<Button
 					variant="danger"
 					size="lg"
+					onlyIcon={true}
 					onClick={() => {
 						onDeleteElement(element.id);
 					}}
