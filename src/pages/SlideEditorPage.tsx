@@ -46,6 +46,7 @@ export function SlideEditorPage() {
 	} | null>(null);
 	const [editingElementId, setEditingElementId] = useState<string | null>(null);
 	const [confirmShareOpen, setConfirmShareOpen] = useState(false);
+	const [confirmDisableShareOpen, setConfirmDisableShareOpen] = useState(false);
 	const [addTextTrigger, setAddTextTrigger] = useState(0);
 
 	// Hooks must be declared before any early returns
@@ -74,6 +75,21 @@ export function SlideEditorPage() {
 		await navigator.clipboard.writeText(url);
 		toast.success("Sharing enabled. Link copied!");
 		setConfirmShareOpen(false);
+	};
+
+	const handleConfirmDisableShare = async () => {
+		if (!deck) return;
+		try {
+			await updateVisibilityMutation.mutateAsync({
+				deckId: deck.id,
+				visibility: "private",
+			});
+		} catch (_) {
+			toast.error("Failed to disable sharing");
+			return;
+		}
+		toast.success("Sharing disabled");
+		setConfirmDisableShareOpen(false);
 	};
 
 	useEffect(() => {
@@ -379,25 +395,26 @@ export function SlideEditorPage() {
 										</Button>
 										<Button
 											variant="secondary"
-											onClick={async () => {
-												const ok = window.confirm(
-													"Disable sharing for all users? Collaborators will lose access.",
-												);
-												if (!ok) return;
-												try {
-													await updateVisibilityMutation.mutateAsync({
-														deckId: deck.id,
-														visibility: "private",
-													});
-												} catch (_) {
-													toast.error("Failed to disable sharing");
-													return;
-												}
-												toast.success("Sharing disabled");
-											}}
+											onClick={() => setConfirmDisableShareOpen(true)}
 										>
 											Disable sharing
 										</Button>
+										<Modal
+											isOpen={confirmDisableShareOpen}
+											onModalClose={() => setConfirmDisableShareOpen(false)}
+											onClose={() => setConfirmDisableShareOpen(false)}
+											onConfirm={handleConfirmDisableShare}
+										>
+											<div>
+												<h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+													Disable sharing?
+												</h3>
+												<p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
+													This will disable sharing for all users. Collaborators
+													will lose access to this deck.
+												</p>
+											</div>
+										</Modal>
 									</>
 								)}
 							</div>
