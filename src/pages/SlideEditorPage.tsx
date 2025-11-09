@@ -1,5 +1,4 @@
-import { useEffect, useState, useRef, memo, useCallback } from "react";
-import type { CSSProperties, FormEventHandler } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import { updateSlideYDoc } from "../lib/api/decksApi";
@@ -12,12 +11,13 @@ import {
 import { LoadingSpinner } from "../components/ui/LoadingSpinner";
 import { Button, Modal } from "../components/ui";
 import {
-	RoomProvider,
-	ClientSideSuspense,
-	useOthers,
+    RoomProvider,
+    ClientSideSuspense,
 } from "@liveblocks/react/suspense";
-import { useMyPresence } from "@liveblocks/react";
 import { useAuthStore } from "../store/auth";
+import { PresenceMouseTracker } from "../components/PresenceMouseTracker";
+import { CanvasSlide, CanvasText, TextElement } from "../components/CanvasText";
+import { SlideCursors } from "../components/SlideCursors";
 import {
 	PlusIcon,
 	Pencil1Icon,
@@ -48,22 +48,6 @@ export function SlideEditorPage() {
 	const slideContainerRefs = useRef<Record<string, HTMLDivElement | null>>({});
 	const initializedSlidesRef = useRef(false);
 
-	type CanvasElement = {
-		id: string;
-		type: "text";
-		content: string;
-		xPercent: number;
-		yPercent: number;
-		fontSize?: number;
-		isBold?: boolean;
-		isItalic?: boolean;
-	};
-
-	type CanvasSlide = {
-		id: string;
-		elements: CanvasElement[];
-	};
-
 	const [canvasSlides, setCanvasSlides] = useState<CanvasSlide[]>([]);
 	const [activeSlideId, setActiveSlideId] = useState<string | null>(null);
 	const [isInsertMenuOpen, setIsInsertMenuOpen] = useState(false);
@@ -81,7 +65,7 @@ export function SlideEditorPage() {
 	const saveTimersRef = useRef<Record<string, number | undefined>>({});
 	const [confirmShareOpen, setConfirmShareOpen] = useState(false);
 
-	const encodeElementsToBytes = (elements: CanvasElement[]): Uint8Array => {
+	const encodeElementsToBytes = (elements: TextElement[]): Uint8Array => {
 		try {
 			const json = JSON.stringify({ elements });
 			return new TextEncoder().encode(json);
@@ -123,7 +107,7 @@ export function SlideEditorPage() {
 		}
 	};
 
-	const decodeElementsFromYDoc = (value: unknown): CanvasElement[] => {
+	const decodeElementsFromYDoc = (value: unknown): TextElement[] => {
 		try {
 			const bytes = decodeUnknownToUint8Array(value);
 			if (!bytes || bytes.length === 0) return [];
@@ -164,6 +148,23 @@ export function SlideEditorPage() {
 	const isOwner = !!(deck && user && user.id === deck.owner_id);
 	const deckVisibility: "private" | "users" =
 		(deck as any)?.visibility ?? "private";
+
+	const handleConfirmShare = async () => {
+		if (!deck) return;
+		try {
+			await updateVisibilityMutation.mutateAsync({
+				deckId: deck.id,
+				visibility: "users",
+			});
+		} catch (_) {
+			toast.error("Failed to enable sharing");
+			return;
+		}
+		const url = `${window.location.origin}/slide/${deck.id}`;
+		await navigator.clipboard.writeText(url);
+		toast.success("Sharing enabled. Link copied!");
+		setConfirmShareOpen(false);
+	};
 
 	// Close insert menu on outside click
 	useEffect(() => {
@@ -221,7 +222,7 @@ export function SlideEditorPage() {
 
 	const handleElementMouseDown = (
 		slideId: string,
-		element: CanvasElement,
+		element: TextElement,
 		e: React.MouseEvent,
 	) => {
 		e.preventDefault();
@@ -356,19 +357,7 @@ export function SlideEditorPage() {
 							className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
 							aria-label="Back to dashboard"
 						>
-							<svg
-								className="w-6 h-6"
-								fill="none"
-								stroke="currentColor"
-								viewBox="0 0 24 24"
-							>
-								<path
-									strokeLinecap="round"
-									strokeLinejoin="round"
-									strokeWidth={2}
-									d="M10 19l-7-7m0 0l7-7m-7 7h18"
-								/>
-							</svg>
+							<ArrowLeftIcon className="w-5 h-5" />
 						</Button>
 						<h1 className="text-lg font-semibold text-gray-900 dark:text-white">
 							Error
@@ -436,7 +425,7 @@ export function SlideEditorPage() {
 
 	const handleInsertText = () => {
 		if (!activeSlideId) return;
-		const newElement: CanvasElement = {
+		const newElement: TextElement = {
 			id: crypto?.randomUUID ? crypto.randomUUID() : `${Date.now()}-text`,
 			type: "text",
 			content: "Double-click to edit",
@@ -547,22 +536,7 @@ export function SlideEditorPage() {
 											isOpen={confirmShareOpen}
 											onModalClose={() => setConfirmShareOpen(false)}
 											onClose={() => setConfirmShareOpen(false)}
-											onConfirm={async () => {
-												if (!deck) return;
-												try {
-													await updateVisibilityMutation.mutateAsync({
-														deckId: deck.id,
-														visibility: "users",
-													});
-												} catch (_) {
-													toast.error("Failed to enable sharing");
-													return;
-												}
-												const url = `${window.location.origin}/slide/${deck.id}`;
-												await navigator.clipboard.writeText(url);
-												toast.success("Sharing enabled. Link copied!");
-												setConfirmShareOpen(false);
-											}}
+							        onConfirm={handleConfirmShare}
 										>
 											<div>
 												<h3 className="text-lg font-semibold text-gray-900 dark:text-white">
@@ -1323,174 +1297,3 @@ export function SlideEditorPage() {
 		</div>
 	);
 }
-
-function PresenceMouseTracker({
-	activeSlideId,
-	slideContainerRefs,
-}: {
-	activeSlideId: string | null;
-	slideContainerRefs: React.MutableRefObject<
-		Record<string, HTMLDivElement | null>
-	>;
-}) {
-	const [, updateMyPresence] = useMyPresence();
-
-	useEffect(() => {
-		// Update slideId even if no cursor yet
-		updateMyPresence({ slideId: activeSlideId || null });
-	}, [activeSlideId, updateMyPresence]);
-
-	useEffect(() => {
-		if (!activeSlideId) return;
-		const el = slideContainerRefs.current[activeSlideId];
-		if (!el) return;
-
-		let raf = 0;
-		const onMove = (e: MouseEvent) => {
-			const rect = el.getBoundingClientRect();
-			const x = ((e.clientX - rect.left) / rect.width) * 100;
-			const y = ((e.clientY - rect.top) / rect.height) * 100;
-			const xPercent = Math.max(0, Math.min(100, x));
-			const yPercent = Math.max(0, Math.min(100, y));
-			if (raf) cancelAnimationFrame(raf);
-			raf = requestAnimationFrame(() => {
-				updateMyPresence({
-					cursor: { xPercent, yPercent },
-					slideId: activeSlideId,
-				});
-			});
-		};
-		const onLeave = () => updateMyPresence({ cursor: null });
-
-		el.addEventListener("mousemove", onMove);
-		el.addEventListener("mouseleave", onLeave);
-		return () => {
-			if (raf) cancelAnimationFrame(raf);
-			el.removeEventListener("mousemove", onMove);
-			el.removeEventListener("mouseleave", onLeave);
-		};
-	}, [activeSlideId, slideContainerRefs, updateMyPresence]);
-
-	return null;
-}
-
-function SlideCursors({ slideId }: { slideId: string }) {
-	const others = useOthers();
-
-	const colors = [
-		"#ef4444",
-		"#f59e0b",
-		"#10b981",
-		"#3b82f6",
-		"#8b5cf6",
-		"#ec4899",
-	];
-
-	return (
-		<>
-			{others
-				.map((o) => ({
-					id: o.connectionId,
-					cursor: (o.presence as any)?.cursor,
-					sId: (o.presence as any)?.slideId,
-				}))
-				.filter((o) => o.cursor && o.sId === slideId)
-				.map((o) => {
-					const color = colors[o.id % colors.length];
-					return (
-						<div
-							key={o.id}
-							className="pointer-events-none absolute"
-							style={{
-								left: `${o.cursor.xPercent}%`,
-								top: `${o.cursor.yPercent}%`,
-								transform: "translate(-50%, -50%)",
-							}}
-						>
-							<div className="flex items-center">
-								<svg
-									className="w-4 h-4 drop-shadow"
-									viewBox="0 0 24 24"
-									fill={color}
-								>
-									<path d="M3 2l7 18 2-7 7-2L3 2z" />
-								</svg>
-							</div>
-						</div>
-					);
-				})}
-		</>
-	);
-}
-
-type CanvasTextProps = {
-	content: string;
-	className?: string;
-	style?: CSSProperties;
-	isEditing: boolean;
-	onInputText: (text: string) => void;
-	onFocus?: () => void;
-	onBlur?: () => void;
-	elementId: string;
-};
-
-const shallowEqual = (
-	a?: Record<string, unknown>,
-	b?: Record<string, unknown>,
-) => {
-	if (a === b) return true;
-	if (!a || !b) return false;
-	const aKeys = Object.keys(a);
-	const bKeys = Object.keys(b);
-	if (aKeys.length !== bKeys.length) return false;
-	for (const k of aKeys) {
-		if (a[k] !== b[k]) return false;
-	}
-	return true;
-};
-
-const CanvasText = memo(
-	function CanvasText({
-		content,
-		className,
-		style,
-		isEditing: _isEditing,
-		onInputText,
-		onFocus,
-		onBlur,
-		elementId,
-	}: CanvasTextProps) {
-		const handleInput = useCallback<FormEventHandler<HTMLDivElement>>(
-			(e) => {
-				const text = e.currentTarget.textContent ?? "";
-				onInputText(text);
-			},
-			[onInputText],
-		);
-
-		return (
-			<div
-				contentEditable
-				suppressContentEditableWarning
-				data-canvas-text="true"
-				data-element-id={elementId}
-				className={className}
-				style={style}
-				onInput={handleInput}
-				onFocus={onFocus}
-				onBlur={onBlur}
-			>
-				{content}
-			</div>
-		);
-	},
-	(prev, next) => {
-		if (next.isEditing) return true;
-		return (
-			prev.content === next.content &&
-			prev.className === next.className &&
-			shallowEqual(prev.style as any, next.style as any) &&
-			prev.isEditing === next.isEditing
-		);
-	},
-);
